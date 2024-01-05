@@ -1,0 +1,1 @@
+ALTER TABLE "users" ALTER COLUMN "uuid" SET DEFAULT 'uuid_generate_v4()';
