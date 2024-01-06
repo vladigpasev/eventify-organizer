@@ -1,0 +1,67 @@
+import React from 'react';
+//@ts-ignore
+import jwt from "jsonwebtoken";
+import { cookies } from 'next/headers';
+import SendMailBtn from '@/components/SendMailBtn';
+import { sql } from '@vercel/postgres';
+import { drizzle } from 'drizzle-orm/vercel-postgres';
+import { users } from '../../../schema/schema';
+import { eq } from 'drizzle-orm';
+import { redirect } from 'next/navigation';
+import LogoutBtn from '@/components/LogoutBtn';
+
+const db = drizzle(sql);
+const cookieStore = cookies();
+
+async function decodeToken() {
+    const token = cookieStore.get('token')?.value;
+    try {
+        const decoded = await jwt.verify(token, process.env.JWT_SECRET);
+        return decoded;
+    } catch (error) {
+        console.log(error)
+        return null;
+    }
+}
+async function EmailVerify() {
+    const decoded = await decodeToken();
+    if (!decoded) {
+        redirect('/auth/login');
+    }
+    const email = decoded.email_addr;
+    const uuid = decoded.uuid;
+
+    const userQueryResult = await db.select({
+        sentVerification: users.sentVerification,
+        email_verified: users.email_verified
+    })
+        .from(users)
+        .where(eq(users.uuid, uuid))
+        .execute();
+
+    if (userQueryResult[0].email_verified) {
+        redirect('/dashboard');
+    }
+
+    const isVerificationSent = userQueryResult.length > 0 && userQueryResult[0].sentVerification;
+
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
+            <LogoutBtn />
+            <div className="bg-white shadow-xl rounded-lg p-6 max-w-sm w-full">
+                <h1 className="text-2xl font-semibold text-gray-800">Verify Your Email</h1>
+                {isVerificationSent ? (
+                    <p className="text-gray-600 mt-2">The verification link is already sent to your email. If you don't have it, please contact Eventify support.</p>
+                ) : (
+                    <p className="text-gray-600 mt-2">The last step to complete your account creation is to verify your email address.</p>
+                )}
+                <div className="mt-2 bg-blue-100 text-blue-800 p-3 rounded">
+                    {email}
+                </div>
+                {!isVerificationSent && <SendMailBtn email={email} />}
+            </div>
+        </div>
+    )
+}
+
+export default EmailVerify

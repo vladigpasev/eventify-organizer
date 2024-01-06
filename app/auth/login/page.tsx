@@ -1,15 +1,29 @@
 "use client"
-import React, { useState } from 'react';
-import { loginUser } from '@/server/auth'; // Modify the path as per your project structure
+import React, { useEffect, useState } from 'react';
+import { checkAuthenticated, loginUser } from '@/server/auth'; // Modify the path as per your project structure
 import { useRouter } from 'next/navigation';
 
+
 function Login() {
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const isAuthenticated = await checkAuthenticated();
+                if (isAuthenticated) {
+                    router.push('/dashboard'); // Redirect to dashboard or desired page if already logged in
+                }
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+            }
+        };
+
+        checkAuth();
+    }, []);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-
     const handleInputChange = (e:any) => {
         const { name, value } = e.target;
         if (name === 'email') {

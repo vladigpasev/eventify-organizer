@@ -1,9 +1,9 @@
 import React from 'react'
+import { redirect } from 'next/navigation'
 
-function Home() {
-  return (
-    <div><h1 className='text-3xl'>Wellcome to Eventify organizer. If you see this, the setup is working!</h1></div>
-  )
+
+function HomeRedirector() {
+    redirect('/dashboard');
 }
 
-export default Home
+export default HomeRedirector

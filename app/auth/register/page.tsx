@@ -1,10 +1,24 @@
 "use client";
-import React, { useState } from 'react';
-import { registerUser } from '@/server/auth';
+import React, { useEffect, useState } from 'react';
+import { checkAuthenticated, registerUser } from '@/server/auth';
 import { useRouter } from 'next/navigation';
 
 function Register() {
     // State for the registration form
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const isAuthenticated = await checkAuthenticated();
+                if (isAuthenticated) {
+                    router.push('/dashboard'); // Redirect to dashboard or desired page if already logged in
+                }
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+            }
+        };
+
+        checkAuth();
+    }, []);
     const [step, setStep] = useState(1);
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({

@@ -50,6 +50,13 @@
       "when": 1704447891673,
       "tag": "0006_broad_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1704461662441,
+      "tag": "0007_lyrical_maddog",
+      "breakpoints": true
     }
   ]
 }

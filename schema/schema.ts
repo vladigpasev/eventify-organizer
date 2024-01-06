@@ -9,5 +9,6 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 100 }).unique(),
   password: text('password'),
   email_verified: boolean('email_verified').default(false),
+  sentVerification: boolean('sentVerification').default(false),
   verification_token: text('verification_token'),
 });
