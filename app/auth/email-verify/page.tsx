@@ -23,6 +23,7 @@ async function decodeToken() {
         return null;
     }
 }
+
 async function EmailVerify() {
     const decoded = await decodeToken();
     if (!decoded) {
@@ -33,17 +34,22 @@ async function EmailVerify() {
 
     const userQueryResult = await db.select({
         sentVerification: users.sentVerification,
-        email_verified: users.email_verified
+        email_verified: users.email_verified,
+        lastEmailSentAt: users.lastEmailSentAt // Fetch the lastEmailSentAt timestamp
     })
         .from(users)
         .where(eq(users.uuid, uuid))
         .execute();
 
-    if (userQueryResult[0].email_verified) {
+    if (userQueryResult[0]?.email_verified) {
         redirect('/dashboard');
     }
 
-    const isVerificationSent = userQueryResult.length > 0 && userQueryResult[0].sentVerification;
+    const isVerificationSent = userQueryResult.length > 0 && userQueryResult[0]?.sentVerification;
+    const lastEmailSentAt = new Date(userQueryResult[0]?.lastEmailSentAt || 0);
+    const currentTime = new Date();
+    //@ts-ignore
+    const remainingTime = Math.max(60 - Math.ceil((currentTime - lastEmailSentAt) / 1000), 0); // Calculate remaining time in seconds
 
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -58,10 +64,10 @@ async function EmailVerify() {
                 <div className="mt-2 bg-blue-100 text-blue-800 p-3 rounded">
                     {email}
                 </div>
-                {!isVerificationSent && <SendMailBtn email={email} />}
+                <SendMailBtn email={email} initialCountdown={remainingTime} />
             </div>
         </div>
     )
 }
 
-export default EmailVerify
+export default EmailVerify;

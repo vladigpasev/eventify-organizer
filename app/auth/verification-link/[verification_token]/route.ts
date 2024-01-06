@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 async function decodeVerificationToken(verification_token: any) {
     try {
-        const decoded_verification_token = jwt.verify(verification_token, process.env.JWT_SECRET);
+        const decoded_verification_token = await jwt.verify(verification_token, process.env.JWT_SECRET);
         return decoded_verification_token;
     } catch (error) {
         console.log("Error decoding verification token:", error)
@@ -18,10 +18,9 @@ async function decodeVerificationToken(verification_token: any) {
     }
 }
 
-async function decodeAuthToken() {
-    const auth_token = cookies().get('token')?.value;
+async function decodeAuthToken(auth_token:any) {
     try {
-        const decoded_auth_token = jwt.verify(auth_token, process.env.JWT_SECRET);
+        const decoded_auth_token = await jwt.verify(auth_token, process.env.JWT_SECRET);
         return decoded_auth_token;
     } catch (error) {
         console.log("Error decoding auth token:", error)
@@ -45,8 +44,6 @@ async function editAuthToken(decoded_auth_token: any) {
 }
 
 export async function GET(request: NextRequest, { params }: { params: { verification_token: string } }) {
-
-
     const cookieStore = cookies();
     const verification_token = params.verification_token;
     const decoded_verification_token = await decodeVerificationToken(verification_token);
@@ -64,7 +61,8 @@ export async function GET(request: NextRequest, { params }: { params: { verifica
     if (userQueryResult[0].email_verified) {
         redirect("/dashboard")
     }
-    const decoded_auth_token = await decodeAuthToken();
+    const auth_token = request.cookies.get('token')?.value;
+    const decoded_auth_token = await decodeAuthToken(auth_token);
    
     if (decoded_auth_token) {
         await editAuthToken(decoded_auth_token);

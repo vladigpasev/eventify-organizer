@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, uuid, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, uuid, boolean, timestamp } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -11,4 +11,7 @@ export const users = pgTable('users', {
   email_verified: boolean('email_verified').default(false),
   sentVerification: boolean('sentVerification').default(false),
   verification_token: text('verification_token'),
+  reset_token: text('reset_token'),
+  // Add the lastEmailSentAt field with a timestamp type
+  lastEmailSentAt: timestamp('last_email_sent_at'),
 });
