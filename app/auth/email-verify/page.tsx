@@ -57,7 +57,7 @@ async function EmailVerify() {
             <div className="bg-white shadow-xl rounded-lg p-6 max-w-sm w-full">
                 <h1 className="text-2xl font-semibold text-gray-800">Verify Your Email</h1>
                 {isVerificationSent ? (
-                    <p className="text-gray-600 mt-2">The verification link is already sent to your email. If you don't have it, please contact Eventify support.</p>
+                    <p className="text-gray-600 mt-2">The verification link is already sent to your email. If you do not have it, please contact Eventify support or try to resend it.</p>
                 ) : (
                     <p className="text-gray-600 mt-2">The last step to complete your account creation is to verify your email address.</p>
                 )}

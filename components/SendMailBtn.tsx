@@ -49,7 +49,7 @@ function SendMailBtn({ email, initialCountdown }:any) {
                     disabled={isSending || countdown > 0}
                 >
                     {countdown > 0 
-                        ? `Please wait ${countdown} seconds` 
+                        ? `Resend in ${countdown} seconds` 
                         : (isSending ? 'Loading...' : 'Send Verification Link')
                     }
                 </button>

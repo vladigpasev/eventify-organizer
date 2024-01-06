@@ -24,7 +24,7 @@ function Login() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const handleInputChange = (e:any) => {
+    const handleInputChange = (e: any) => {
         const { name, value } = e.target;
         if (name === 'email') {
             setEmail(value);
@@ -40,7 +40,7 @@ function Login() {
         return re.test(String(email).toLowerCase());
     }
 
-    const handleSubmit = async (e:any) => {
+    const handleSubmit = async (e: any) => {
         e.preventDefault();
 
         if (!email || !password) {
@@ -97,7 +97,7 @@ function Login() {
                                     {loading ? 'Loading...' : 'Sign In'}
                                 </button>
                                 <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                                    Don't have an account? <a href="/auth/register" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Register here</a>
+                                    Don&apos;t have an account? <a href="/auth/register" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Register here</a>
                                 </p>
                             </form>
                         </div>
