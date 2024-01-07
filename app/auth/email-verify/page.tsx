@@ -11,9 +11,9 @@ import { redirect } from 'next/navigation';
 import LogoutBtn from '@/components/LogoutBtn';
 
 const db = drizzle(sql);
-const cookieStore = cookies();
 
 async function decodeToken() {
+    const cookieStore = cookies();
     const token = cookieStore.get('token')?.value;
     try {
         const decoded = await jwt.verify(token, process.env.JWT_SECRET);
