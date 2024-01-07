@@ -16,6 +16,7 @@ function urlSafeBase64Decode(base64String: string) {
 async function verifyJwt(token: any, secret: any) {
     // Decode the JWT without verifying to get the header and payload
     const parts = token.split('.');
+    //@ts-ignore
     if (parts.length !== 3 || !parts.every(part => /^[A-Za-z0-9\-_]+={0,2}$/.test(part))) {
         throw new Error('Invalid token format');
     }
