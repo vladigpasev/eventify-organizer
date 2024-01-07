@@ -4,21 +4,24 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-// import { users } from './schema/schema';
-// import { eq } from 'drizzle-orm';
 
 const db = drizzle(sql);
+
+// Converts URL-safe base64 to regular base64
+function urlSafeBase64Decode(base64String: string) {
+    return base64String.replace(/-/g, '+').replace(/_/g, '/').padEnd(base64String.length + (4 - base64String.length % 4) % 4, '=');
+}
 
 //Custom verifyJwt function, because crypto is not supported in edge functions
 async function verifyJwt(token: any, secret: any) {
     // Decode the JWT without verifying to get the header and payload
     const parts = token.split('.');
-    if (parts.length !== 3) {
-        throw new Error('Token must have 3 parts');
+    if (parts.length !== 3 || !parts.every(part => /^[A-Za-z0-9\-_]+={0,2}$/.test(part))) {
+        throw new Error('Invalid token format');
     }
 
-    const header = JSON.parse(atob(parts[0]));
-    const payload = JSON.parse(atob(parts[1]));
+    const header = JSON.parse(atob(urlSafeBase64Decode(parts[0])));
+    const payload = JSON.parse(atob(urlSafeBase64Decode(parts[1])));
 
     // Ensure the algorithm is HS256
     if (header.alg !== 'HS256') {
@@ -35,7 +38,7 @@ async function verifyJwt(token: any, secret: any) {
     const key = await crypto.subtle.importKey('raw', keyData, algorithm, false, ['verify']);
 
     // Prepare the signature
-    const signature = Uint8Array.from(atob(parts[2]), c => c.charCodeAt(0));
+    const signature = Uint8Array.from(atob(urlSafeBase64Decode(parts[2])), c => c.charCodeAt(0));
 
     // Verify the signature
     const signatureIsValid = await crypto.subtle.verify(algorithm, key, signature, signingInput);
@@ -68,22 +71,6 @@ export async function middleware(request: NextRequest) {
         if (!decoded || !decoded.uuid) {
             throw new Error('Invalid token');
         }
-
-        // Check if there's a user with the UUID from the token
-
-        // const userQueryResult = await db.select({
-        //     uuid: users.uuid,
-        //     email_verified: users.email_verified
-        // })
-        //     .from(users)
-        //     .where(eq(users.uuid, decoded.uuid))
-        //     .execute();
-
-        // const user = userQueryResult[0];
-
-        // if (!user) {
-        //     throw new Error('No user found with this token');
-        // }
 
         if (!decoded.email_verified) {
             // Redirect to email verification if the email isn't verified
