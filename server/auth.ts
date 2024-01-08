@@ -136,7 +136,7 @@ export async function loginUser(data: any) {
             path: '/',
             secure: process.env.NODE_ENV !== 'development',
             maxAge: 3600,
-            sameSite: 'strict',
+            sameSite: 'lax',
         })
 
         return { success: true, message: 'User authenticated successfully' };
@@ -153,13 +153,21 @@ function generateVerificationToken(email: any) {
 }
 
 export async function sendEmail(email: any) {
+    const token = cookies().get("token")?.value;
+    const decoded = await jwt.verify(token, process.env.JWT_SECRET);
+    if(!decoded){
+        return;
+    }
+    if(decoded.email_verified){
+        return;
+    }
     const userQueryResult = await db.select({
         sentVerification: users.sentVerification,
         lastEmailSentAt: users.lastEmailSentAt // assuming you have a lastEmailSentAt field
     })
-    .from(users)
-    .where(eq(users.email, email))
-    .execute();
+        .from(users)
+        .where(eq(users.email, email))
+        .execute();
 
     // const isVerificationSent = userQueryResult.length > 0 && userQueryResult[0].sentVerification;
     const lastEmailSentAt = userQueryResult[0]?.lastEmailSentAt || new Date(0); // default to epoch if null
@@ -222,8 +230,8 @@ export async function sendEmail(email: any) {
 
         console.log("Message sent: %s", info.messageId);
         await db.update(users)
-            .set({ 
-                sentVerification: true, 
+            .set({
+                sentVerification: true,
                 verification_token: verificationToken,
                 lastEmailSentAt: currentTime // update the last email sent time
             })
@@ -233,7 +241,7 @@ export async function sendEmail(email: any) {
     } catch (error) {
         // Handle the error
         return { success: false };
-        
+
     }
 }
 

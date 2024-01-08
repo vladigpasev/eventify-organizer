@@ -42,10 +42,10 @@ export async function GET(request: NextRequest, { params }: { params: { verifica
             path: '/',
             secure: process.env.NODE_ENV !== 'development',
             maxAge: 3600,
-            sameSite: 'strict',
+            sameSite: 'lax',
         });
     }
-    
+
     const verification_token = params.verification_token;
     const decoded_verification_token = await decodeVerificationToken(verification_token);
     if (!decoded_verification_token) {
@@ -63,6 +63,7 @@ export async function GET(request: NextRequest, { params }: { params: { verifica
         redirect("/dashboard")
     }
     const auth_token = request.cookies.get('token')?.value;
+    //console.log(auth_token);
     const decoded_auth_token = await decodeAuthToken(auth_token);
 
     if (decoded_auth_token) {
