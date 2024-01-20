@@ -15,6 +15,7 @@ function Navbar() {
     const toggleDrawer = () => setIsDrawerOpen(!isDrawerOpen);
     const drawerRef = useRef(null);
     const barsRef = useRef(null);
+    const pathname = usePathname();
 
     useEffect(() => {
         const handleOutsideClick = (event: any) => {
@@ -36,8 +37,6 @@ function Navbar() {
 
     // Function to check if the path is active
     const isActive = (path: any) => {
-        const pathname = usePathname()
-        console.log(pathname);
         return pathname === path;
     };
 
