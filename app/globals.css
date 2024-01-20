@@ -25,3 +25,9 @@ body {
     )
     rgb(var(--background-start-rgb));
 }
+
+@media (min-width: 1024px) { /* This corresponds to the 'lg:' breakpoint */
+  .main-content {
+      padding-left: 307px; /* Adjust this value based on your sidebar's width */
+  }
+}
