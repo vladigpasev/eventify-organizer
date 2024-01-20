@@ -4,12 +4,35 @@ import InvoicesSvg from '@/public/images/icons/Invoices'
 import LogoutSvg from '@/public/images/icons/Logout'
 import SettingsSvg from '@/public/images/icons/Settings'
 import Link from 'next/link'
-import React from 'react'
+import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation'
 import { handleLogout } from '@/server/auth'
+import Bars from '@/public/images/icons/Bars'
 
 
 function Navbar() {
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const toggleDrawer = () => setIsDrawerOpen(!isDrawerOpen);
+    const drawerRef = useRef(null);
+    const barsRef = useRef(null);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: any) => {
+            if (
+                isDrawerOpen &&
+                drawerRef.current &&
+                //@ts-ignore
+                !drawerRef.current.contains(event.target) &&
+                //@ts-ignore
+                !barsRef.current.contains(event.target)
+            ) {
+                setIsDrawerOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, [isDrawerOpen]);
 
     // Function to check if the path is active
     const isActive = (path: any) => {
@@ -22,7 +45,13 @@ function Navbar() {
         <div>
             <div>
                 <div className="navbar bg-base-100">
-                    <div className="flex-1"></div>
+                    <div className="flex-1">
+                        <div className='lg:hidden flex gap-5 items-center'>
+                            {/* Toggle button for the drawer */}
+                            <div ref={barsRef} className='pl-2 cursor-pointer' onClick={toggleDrawer}><Bars /></div>
+                            <div><Link href="/dashboard"><img src="/logo.svg" alt="Eventify Logo" className='w-32' /></Link></div>
+                        </div>
+                    </div>
                     <div className="flex-none">
                         <div className="dropdown dropdown-end">
                             <div tabIndex={0} role="button" className="btn btn-ghost btn-circle">
@@ -69,7 +98,8 @@ function Navbar() {
                     </div>
                 </div>
             </div>
-            <div className="fixed z-50 top-0 left-0 lg:w-[307px] h-full bg-blue-800 rounded-tr-[20px] rounded-br-[20px] flex flex-col items-center gap-12">
+
+            <div ref={drawerRef} className={`fixed z-50 top-0 supersmall:w-[307px] h-full bg-blue-800 rounded-tr-[20px] rounded-br-[20px] lg:flex flex-col items-center gap-12 ${isDrawerOpen ? 'flex' : 'hidden'}`}>
                 <div className='pt-12'>
                     <Link href='/dashboard' className='cursor-pointer'><img className="w-36" src="/logo-white.svg" alt="Logo" /></Link>
                 </div>
@@ -119,8 +149,6 @@ function Navbar() {
                                 </div>
                             </button>
                         </form>
-
-
                     </div>
                 </div>
             </div>
