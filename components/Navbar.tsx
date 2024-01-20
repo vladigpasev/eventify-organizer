@@ -6,6 +6,7 @@ import SettingsSvg from '@/public/images/icons/Settings'
 import Link from 'next/link'
 import React from 'react'
 import { usePathname } from 'next/navigation'
+import { handleLogout } from '@/server/auth'
 
 
 function Navbar() {
@@ -106,21 +107,24 @@ function Navbar() {
                         </Link>
                     </div>
                     <div className='w-full flex flex-col gap-7 mb-5'>
-                        <Link href="/logout">
-                            <div className={`w-full h-14 rounded border flex items-center gap-4 cursor-pointer ${isActive('/logout') ? 'bg-white border-gray-100 hover:bg-gray-100' : 'border-transparent hover:bg-white hover:bg-opacity-10'}`}>
-                                <div className="flex justify-center items-center pl-2">
-                                    <div className={`rounded-full p-2 ${isActive('/logout') ? 'bg-white bg-opacity-50 text-blue-800' : 'bg-white bg-opacity-50 text-white'}`}>
-                                        <LogoutSvg />
+                        <form action={handleLogout}>
+                            <button type='submit' className='w-full'>
+                                <div className={`w-full h-14 rounded border flex items-center gap-4 cursor-pointer ${isActive('/logout') ? 'bg-white border-gray-100 hover:bg-gray-100' : 'border-transparent hover:bg-white hover:bg-opacity-10'}`}>
+                                    <div className="flex justify-center items-center pl-2">
+                                        <div className={`rounded-full p-2 ${isActive('/logout') ? 'bg-white bg-opacity-50 text-blue-800' : 'bg-white bg-opacity-50 text-white'}`}>
+                                            <LogoutSvg />
+                                        </div>
                                     </div>
+                                    <div className={`w-[93.28px] ${isActive('/logout') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Log out</div>
                                 </div>
-                                <div className={`w-[93.28px] ${isActive('/logout') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Log out</div>
-                            </div>
-                        </Link>
+                            </button>
+                        </form>
+
+
                     </div>
                 </div>
             </div>
         </div>
     )
 }
-
 export default Navbar
