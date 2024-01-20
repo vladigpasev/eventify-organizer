@@ -43,7 +43,7 @@ function Navbar() {
     return (
         <div>
             <div>
-                <div className="navbar bg-base-100">
+                <div className="navbar bg-base-100 shadow-lg">
                     <div className="flex-1">
                         <div className='lg:hidden flex gap-5 items-center'>
                             {/* Toggle button for the drawer */}

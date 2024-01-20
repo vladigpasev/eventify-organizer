@@ -3,7 +3,7 @@ import React from 'react'
 function GoSvg() {
     return (
         <div>
-            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" fill="none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 30 30" fill="none">
                 <circle cx="15" cy="15" r="15" fill="currentColor" />
                 <mask id="mask0_3_1476" maskUnits="userSpaceOnUse" x="6" y="6" width="17" height="17">
                     <rect x="22.6665" y="22.6665" width="16" height="16" transform="rotate(180 22.6665 22.6665)" fill="#D9D9D9" />

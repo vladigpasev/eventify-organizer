@@ -18,7 +18,7 @@
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: #efefef;
+  background: #fff;
 }
 
 @media (min-width: 1024px) { /* This corresponds to the 'lg:' breakpoint */

@@ -11,7 +11,7 @@ function Dashboard() {
       <div className='pb-5'><h1 className='text-xl font-medium'>My Events</h1></div>
       <div className='w-full flex flex-grow items-center justify-center'>
         <div className='grid md:grid-cols-4 sm:grid-cols-3 supersmall:grid-cols-2 grid-cols-1 gap-5 w-fit'>
-        <div className='bg-white w-46 p-3 rounded overflow-hidden'>
+          <div className='bg-white w-46 p-3 rounded overflow-hidden shadow-xl'>
             <div className='pb-2 h-60'>
               <img src="/images/example.png" alt="Event Image" className='w-full h-full object-cover object-center rounded' />
             </div>
@@ -25,7 +25,7 @@ function Dashboard() {
               </div>
             </div>
           </div>
-          <div className='bg-white w-46 p-3 rounded overflow-hidden'>
+          <div className='bg-white w-46 p-3 rounded overflow-hidden shadow-xl'>
             <div className='pb-2 h-60'>
               <img src="https://media.npr.org/assets/img/2022/11/04/gettyimages-1183414292-1-_slide-edff8c3fe6afcab5c6457e3c7bd011f5c1745161.jpg" alt="Event Image" className='w-full h-full object-cover object-center rounded' />
             </div>
@@ -39,7 +39,7 @@ function Dashboard() {
               </div>
             </div>
           </div>
-          <div className='bg-white w-46 p-3 rounded overflow-hidden'>
+          <div className='bg-white w-46 p-3 rounded overflow-hidden shadow-xl'>
             <div className='pb-2 h-60'>
               <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqzelRvUGQxdhSn5G2MuMAkWQRfeVqfAAY2Q&usqp=CAU" alt="Event Image" className='w-full h-full object-cover object-center rounded' />
             </div>
@@ -53,7 +53,7 @@ function Dashboard() {
               </div>
             </div>
           </div>
-          <div className='bg-white w-46 p-3 rounded overflow-hidden'>
+          <div className='bg-white w-46 p-3 rounded overflow-hidden shadow-xl'>
             <div className='pb-2 h-60'>
               <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/73/Chicago_Bulls_and_New_Jersey_Nets%2C_March_28%2C_1991.jpg/550px-Chicago_Bulls_and_New_Jersey_Nets%2C_March_28%2C_1991.jpg" alt="Event Image" className='w-full h-full object-cover object-center rounded' />
             </div>
