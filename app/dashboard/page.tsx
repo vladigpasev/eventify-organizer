@@ -1,3 +1,4 @@
+import CreateEvent from '@/components/CreateEvent'
 import EurSign from '@/public/images/icons/EurSign'
 import EventTimeSvg from '@/public/images/icons/EventTime'
 import GoSvg from '@/public/images/icons/GoSvg'
@@ -8,7 +9,10 @@ import React from 'react'
 function Dashboard() {
   return (
     <div className='p-5'>
-      <div className='pb-5'><h1 className='text-xl font-medium'>My Events</h1></div>
+      <div className='pb-5 flex flex-row justify-between items-center'>
+        <h1 className='text-xl font-medium'>My Events</h1>
+        <CreateEvent />
+      </div>
       <div className='w-full flex flex-grow items-center justify-center'>
         <div className='grid md:grid-cols-4 sm:grid-cols-3 supersmall:grid-cols-2 grid-cols-1 gap-5 w-fit'>
           <div className='bg-white w-46 p-3 rounded overflow-hidden shadow-xl'>
