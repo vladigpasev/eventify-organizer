@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
@@ -25,4 +30,10 @@ body {
   .main-content {
       padding-left: 307px; /* Adjust this value based on your sidebar's width */
   }
+}
+
+*{
+  -webkit-appearance: none; /* За Safari и Chrome */
+    -moz-appearance: none;    /* За Firefox */
+    /* Останалите стилове */
 }

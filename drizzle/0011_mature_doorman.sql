@@ -1,0 +1,1 @@
+ALTER TABLE "events" ALTER COLUMN "price" SET DATA TYPE numeric(10, 2);

@@ -71,6 +71,20 @@
       "when": 1704556195046,
       "tag": "0009_useful_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1706960264595,
+      "tag": "0010_sturdy_king_cobra",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1706960590071,
+      "tag": "0011_mature_doorman",
+      "breakpoints": true
     }
   ]
 }

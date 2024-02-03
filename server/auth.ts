@@ -260,3 +260,13 @@ export async function checkAuthenticated() {
         return false;
     }
 }
+
+export async function verifyToken(token:any) {
+    const auth_token = cookies().get("token")?.value;
+    try {
+        const decoded = await jwt.verify(auth_token, process.env.JWT_SECRET);
+        return decoded;
+    } catch (error) {
+        return false;
+    }
+}

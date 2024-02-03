@@ -1,4 +1,3 @@
-import CreateEvent from '@/components/CreateEvent'
 import EurSign from '@/public/images/icons/EurSign'
 import EventTimeSvg from '@/public/images/icons/EventTime'
 import GoSvg from '@/public/images/icons/GoSvg'
@@ -11,7 +10,13 @@ function Dashboard() {
     <div className='p-5'>
       <div className='pb-5 flex flex-row justify-between items-center'>
         <h1 className='text-xl font-medium'>My Events</h1>
-        <CreateEvent />
+        <a href="/dashboard/create">
+          <div
+            className="w-[47px] h-[46px] px-3.5 py-2.5 bg-white rounded-xl border border-blue-800 justify-center items-center gap-2.5 inline-flex cursor-pointer"
+          >
+            <div className="text-blue-800 text-base font-medium font-['Poppins'] leading-relaxed">+</div>
+          </div>
+        </a>
       </div>
       <div className='w-full flex flex-grow items-center justify-center'>
         <div className='grid md:grid-cols-4 sm:grid-cols-3 supersmall:grid-cols-2 grid-cols-1 gap-5 w-fit'>
