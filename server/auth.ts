@@ -1,5 +1,6 @@
 'use server';
 import { z } from 'zod';
+import Stripe from 'stripe';
 //@ts-ignore
 import bcrypt from 'bcrypt';
 import { sql } from '@vercel/postgres';
@@ -17,6 +18,9 @@ import { redirect } from 'next/navigation';
 const db = drizzle(sql);
 
 export async function registerUser(data: any) {
+    const stripe = new Stripe("sk_test_51OUni6KO87GEImsyMm1mtLcaXJlDknUUdtyd4ewl9nDJ1tUBQXmcRqpbg7IIFI4ZF0oqXwOSPEx3RDmnmLSctAnb005qrLhuZj", {
+        apiVersion: "2023-10-16",
+    });
     const userSchema = z.object({
         firstname: z.string(),
         lastname: z.string(),
@@ -46,13 +50,18 @@ export async function registerUser(data: any) {
 
         // Hash the password
         const hashedPassword = await bcrypt.hash(data.password, 10);
+        const payoutAccount = await stripe.accounts.create({
+            type: 'express',
+        });
+        const payoutId = payoutAccount.id;
 
         const user: InferInsertModel<typeof users> = {
             firstname: data.firstname,
             lastname: data.lastname,
             company: data.company,
             email: data.email,
-            password: hashedPassword
+            password: hashedPassword,
+            payoutId: payoutId,
         };
 
         // Insert user data into the database using Drizzle's correct insert method
@@ -104,7 +113,10 @@ export async function loginUser(data: any) {
             uuid: users.uuid,
             email: users.email,
             password: users.password,
-            email_verified: users.email_verified
+            email_verified: users.email_verified,
+            setpayment: users.setpayment,
+            payoutCompleted: users.payoutCompleted,
+            payoutId: users.payoutId
         })
             .from(users)
             .where(eq(users.email, data.email))
@@ -128,7 +140,7 @@ export async function loginUser(data: any) {
         }
 
         console.log('User authenticated successfully');
-        const token = jwt.sign({ uuid: user.uuid, email_verified: user.email_verified, email_addr: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ uuid: user.uuid, email_verified: user.email_verified, email_addr: user.email, setpayment: user.setpayment, payoutId: user.payoutId }, process.env.JWT_SECRET, { expiresIn: '1h' });
         cookies().set({
             name: 'token',
             value: token,
@@ -155,10 +167,10 @@ function generateVerificationToken(email: any) {
 export async function sendEmail(email: any) {
     const token = cookies().get("token")?.value;
     const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-    if(!decoded){
+    if (!decoded) {
         return;
     }
-    if(decoded.email_verified){
+    if (decoded.email_verified) {
         return;
     }
     const userQueryResult = await db.select({
@@ -261,7 +273,7 @@ export async function checkAuthenticated() {
     }
 }
 
-export async function verifyToken(token:any) {
+export async function verifyToken(token: any) {
     const auth_token = cookies().get("token")?.value;
     try {
         const decoded = await jwt.verify(auth_token, process.env.JWT_SECRET);

@@ -13,6 +13,9 @@ export const users = pgTable('users', {
   verification_token: text('verification_token'),
   reset_token: text('reset_token'),
   lastEmailSentAt: timestamp('last_email_sent_at'),
+  setpayment: boolean('setpayment').default(false),
+  payoutCompleted: boolean('payoutCompleted').default(false),
+  payoutId: varchar('payoutId', { length: 100 })
 });
 
 export const events = pgTable('events', {

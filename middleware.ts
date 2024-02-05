@@ -78,7 +78,12 @@ export async function middleware(request: NextRequest) {
             return NextResponse.redirect(new URL('/auth/email-verify', request.url));
         }
 
-        // User is verified, allow them to continue
+        // Redirect to payment setup if the user's payment is not set
+        if (!decoded.setpayment) {
+            return NextResponse.redirect(new URL('/auth/paymentsetup', request.url));
+        }
+
+        // User is verified and payment is set, allow them to continue
         return NextResponse.next();
 
     } catch (error) {
@@ -87,6 +92,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 }
+
 
 export const config = {
     matcher: [

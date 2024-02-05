@@ -32,16 +32,29 @@ export async function GET(request: NextRequest, { params }: { params: { verifica
     }
 
     async function editAuthToken(decoded_auth_token: any) {
-        const uuid = decoded_auth_token.uuid;
-        const email_addr = decoded_auth_token.email_addr;
-        const updatedAuthToken = jwt.sign({ uuid: uuid, email_verified: true, email_addr: email_addr }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Decode the token to get its payload without verifying the signature
+       // const payload = jwt.decode(decoded_auth_token);
+    
+        // Update the email_verified field
+        //payload.email_verified = true;
+
+        const updatedPayload = {
+        ...decoded_auth_token, 
+        email_verified: true,
+        exp: decoded_auth_token.exp
+        }
+    
+        // Resign the token. The 'exp' field is preserved as it is in the payload
+        const updatedAuthToken = jwt.sign(updatedPayload, process.env.JWT_SECRET);
+    
+        // Set the cookie with the updated token
         cookies().set({
             name: 'token',
             value: updatedAuthToken,
             httpOnly: true,
             path: '/',
             secure: process.env.NODE_ENV !== 'development',
-            maxAge: 3600,
+            maxAge: decoded_auth_token.exp - Math.floor(Date.now() / 1000),
             sameSite: 'lax',
         });
     }

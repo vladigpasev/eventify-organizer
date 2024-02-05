@@ -95,8 +95,11 @@ function Navbar() {
                             </div>
                         </Link>
                     </div>
+                    
                 </div>
+                
             </div>
+            
 
             <div ref={drawerRef} className={`fixed z-50 top-0 supersmall:w-[307px] h-full bg-blue-800 rounded-tr-[20px] rounded-br-[20px] lg:flex flex-col items-center gap-12 ${isDrawerOpen ? 'flex' : 'hidden'}`}>
                 <div className='pt-12'>

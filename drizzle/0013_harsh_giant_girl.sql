@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "payoutCompleted" boolean DEFAULT false;
