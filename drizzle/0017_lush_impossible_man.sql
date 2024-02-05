@@ -1,0 +1,1 @@
+ALTER TABLE "events" ALTER COLUMN "dateTime" SET DATA TYPE varchar(100);

@@ -27,6 +27,7 @@ interface EventFormData {
     isFree?: boolean;
     visibility?: string;
     price?: number;
+    dateTime?: string;
 }
 
 interface EventFormProps {
@@ -51,7 +52,8 @@ const EVENT_FIELD_GROUPS: FieldGroup[] = [
     {
         title: "Details",
         fields: [
-            { id: "description", label: "Description*", placeholder: "Describe your event", type: "text", isTextArea: true }
+            { id: "description", label: "Description*", placeholder: "Describe your event", type: "text", isTextArea: true },
+            { id: "dateTime", label: "Date & Time*", placeholder: "Select the date and time", type: "datetime-local" }
         ],
     },
     {
@@ -74,6 +76,12 @@ const validateField = (fieldId: string, value: string): boolean => {
         return false;
     }
     return true;
+}
+
+const validateDateTime = (dateTime: any) => {
+    const selectedDateTime = new Date(dateTime);
+    const now = new Date();
+    return selectedDateTime > now;
 }
 
 const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
@@ -100,6 +108,13 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
 
         if (!isValid) return;
 
+        const dateTime = e.currentTarget.dateTime.value;
+        if (!validateDateTime(dateTime)) {
+            alert("The date and time must be in the future.");
+            return;
+        }
+
+
         const formData: EventFormData = {
             eventName: e.currentTarget.eventName.value,
             category: e.currentTarget.category.value,
@@ -108,6 +123,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             location: e.currentTarget.location.value,
             isFree: isFreeEvent,
             price: isFreeEvent ? 0 : parseFloat(parseFloat(e.currentTarget.price.value).toFixed(2)),
+            dateTime,
         };
 
         try {
@@ -133,6 +149,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             // Implement your error handling logic here
         }
     };
+    const minDateTime = new Date().toISOString().slice(0, 16);
 
     return (
         <LoadScript
@@ -160,15 +177,25 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                     />
                                 ) : field.type === "select" ? (
                                     <select
-                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500
-                                    "
                                         id={field.id}
-                                    // defaultValue={initialData?.[field.id as keyof EventFormData]}
+                                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                                        //@ts-ignore
+                                        defaultValue={initialData?.[field.id as keyof EventFormData]}
                                     >
                                         {field.options?.map(option => (
                                             <option key={option} value={option}>{option}</option>
                                         ))}
                                     </select>
+                                ) : field.type === "datetime-local" ? (
+                                    <input
+                                        id={field.id}
+                                        type={field.type}
+                                        //@ts-ignore
+                                        defaultValue={initialData?.[field.id as keyof EventFormData]}
+                                        min={minDateTime} // Add this line
+                                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
+                                        placeholder={field.placeholder}
+                                    />
                                 ) : (
                                     <input
                                         id={field.id}
@@ -181,6 +208,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                 )}
                             </div>
                         ))}
+
                     </div>
                 ))}
 

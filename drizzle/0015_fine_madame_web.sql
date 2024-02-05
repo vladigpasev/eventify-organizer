@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "userUuid" varchar(100) NOT NULL;

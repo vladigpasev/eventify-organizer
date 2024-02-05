@@ -25,27 +25,42 @@ export async function createEvent(data: any) {
         thumbnailUrl: z.string(),
         location: z.string(),
         isFree: z.boolean(),
-        price: z.number(),
+        price: z.any(),
+        dateTime: z.string().refine(
+            (dateString) => {
+                const date = new Date(dateString);
+                return !isNaN(date.getTime()) && date > new Date();
+            },
+            {
+                message: "DateTime must be a valid future date and time.",
+            }
+        ),
+        // No need to include userUuid here as it's obtained from the token
     });
-    let eventData: InferInsertModel<typeof events>;
-    try {
-        eventData = eventSchema.parse(data);
-    } catch (error) {
-        console.error("Validation error: ", error);
-        return { success: false, error: "Data validation failed" };
-    }
+    const token = cookies().get("token")?.value;
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const userUuid = decodedToken.uuid;
 
     try {
+        const validatedData = eventSchema.parse(data);
+
+        // Combine validated data with userUuid
+        const eventData = {
+            ...validatedData,
+            userUuid: userUuid
+        };
+
         const result = await db.insert(events).values(eventData).execute();
         return { success: true, message: 'Event created successfully' };
     } catch (error) {
-        console.error('Event creation failed:', error);
+        console.error('Error:', error);
         return { success: false, message: 'Event creation failed' };
     }
 }
 
 
-export async function editEvent(data:any) {
+
+export async function editEvent(data: any) {
     return { message: "Coming soon" }
 
 }

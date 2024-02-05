@@ -76,7 +76,7 @@ export async function create_checkout_session(prevState: any, formData: FormData
         }
 
         // Decode the existing token
-        const decodedToken = jwt.decode(existingToken);
+        const decodedToken = jwt.verify(existingToken, process.env.JWT_SECRET);
         if (!decodedToken || typeof decodedToken === 'string') {
             return { success: false, error: "Invalid token" };
         }
@@ -128,7 +128,7 @@ export async function continueWithFreePlan() {
         }
 
         // Decode the existing token
-        const decodedToken = jwt.decode(existingToken);
+        const decodedToken = jwt.verify(existingToken, process.env.JWT_SECRET);
         if (!decodedToken || typeof decodedToken === 'string') {
             return { success: false, error: "Invalid token" };
         }

@@ -18,7 +18,7 @@ const stripe = new Stripe("sk_test_51OUni6KO87GEImsyMm1mtLcaXJlDknUUdtyd4ewl9nDJ
 
 export async function createPayoutLink() {
     const token = cookies().get("token")?.value;
-    const decodedToken = jwt.decode(token);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
 
     
 

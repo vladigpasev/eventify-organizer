@@ -28,4 +28,6 @@ export const events = pgTable('events', {
   location: varchar('location', {length: 100}).notNull(),
   isFree: boolean('isFree').default(false),
   price: numeric('price', { precision: 10, scale: 2 }),
+  userUuid: varchar('userUuid', {length: 100}).notNull(),
+  dateTime: varchar('dateTime', {length: 100}).notNull()
 });

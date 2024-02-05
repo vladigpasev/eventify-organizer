@@ -100,7 +100,7 @@ export default function Pricing() {
     return (
         <>
             {/* Start */}
-
+<img src="/logo.png" alt="Eventify Logo" className="w-60 p-5" />
             <section className="py-10 px-6 lg:px-52" id="pricing">
                 <div >
                     <div className="grid grid-cols-1 pb-8 text-center">
