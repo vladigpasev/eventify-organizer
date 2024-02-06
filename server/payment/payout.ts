@@ -12,9 +12,9 @@ import { redirect } from "next/navigation";
 
 const db = drizzle(sql);
 
-const stripe = new Stripe("sk_test_51OUni6KO87GEImsyMm1mtLcaXJlDknUUdtyd4ewl9nDJ1tUBQXmcRqpbg7IIFI4ZF0oqXwOSPEx3RDmnmLSctAnb005qrLhuZj", {
-    apiVersion: "2023-10-16",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2023-10-16'
+  });
 
 export async function createPayoutLink() {
     const token = cookies().get("token")?.value;

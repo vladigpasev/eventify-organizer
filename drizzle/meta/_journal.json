@@ -127,6 +127,27 @@
       "when": 1707135818014,
       "tag": "0017_lush_impossible_man",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1707140510554,
+      "tag": "0018_overconfident_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1707169372935,
+      "tag": "0019_stormy_randall_flagg",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1707245398966,
+      "tag": "0020_smiling_exiles",
+      "breakpoints": true
     }
   ]
 }

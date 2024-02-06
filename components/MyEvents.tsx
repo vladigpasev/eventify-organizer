@@ -11,7 +11,11 @@ import { events } from '../schema/schema';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers'
+import Stripe from 'stripe';
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2023-10-16'
+  });
 const db = drizzle(sql);
 
 async function MyEvents() {
@@ -31,6 +35,8 @@ async function MyEvents() {
         .from(events)
         .where(eq(events.userUuid, userUuid))
         .execute();
+
+        
 
     return (
         <div className='p-5'>

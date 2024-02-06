@@ -225,12 +225,12 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                         <div className='w-full'>
                             <UploadButton
                                 endpoint='imageUploader'
-                                className='mt-2'
+                                className='mt-2 z-20'
                                 onClientUploadComplete={handleUploadComplete}
                                 onUploadError={handleUploadError}
                                 content={{
                                     button: (
-                                        <a className='flex mx-auto link cursor-pointer font-semibold gap-2'>
+                                        <a className='flex mx-auto link cursor-pointer font-semibold gap-2 z-20'>
                                             Change Image
                                         </a>
                                     )
@@ -238,7 +238,8 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                 appearance={{
                                     button: {
                                         width: '100%',
-                                        maxWidth: '350px'
+                                        maxWidth: '350px',
+                                        zIndex: 1,
                                     }
                                 }}
                             />

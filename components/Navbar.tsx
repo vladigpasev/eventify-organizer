@@ -8,11 +8,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation'
 import { handleLogout } from '@/server/auth'
 import Bars from '@/public/images/icons/Bars'
+import MyPlan from './MyPlan'
 
 
 function Navbar() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isMyPlanOpen, setIsMyPlanOpen] = useState(false); // State for MyPlan popup
     const toggleDrawer = () => setIsDrawerOpen(!isDrawerOpen);
+    const toggleMyPlan = () => setIsMyPlanOpen(!isMyPlanOpen); // Function to toggle MyPlan popup
     const drawerRef = useRef(null);
     const barsRef = useRef(null);
     const pathname = usePathname();
@@ -42,8 +45,8 @@ function Navbar() {
 
     return (
         <div>
-            <div className='pb-16'>
-                <div className="fixed navbar bg-base-100 shadow-lg">
+            <div className='pb-16 z-40'>
+                <div className="fixed navbar bg-base-100 shadow-lg z-40">
                     <div className="flex-1">
                         <div className='lg:hidden flex gap-5 items-center'>
                             {/* Toggle button for the drawer */}
@@ -85,23 +88,33 @@ function Navbar() {
 
                             </div>
                         </div>
-                        <Link href="/settings/profile">
-                            <div className="dropdown dropdown-end">
-                                <div className="btn btn-ghost btn-circle avatar">
-                                    <div className="w-10 rounded-full">
-                                        <img alt="Profile picture" src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
-                                    </div>
+                        <div className="dropdown dropdown-end">
+                            <div tabIndex={0} role="button" className="btn btn-ghost btn-circle avatar">
+                                <div className="w-10 rounded-full">
+                                    <img alt="Tailwind CSS Navbar component" src="https://daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
                                 </div>
                             </div>
-                        </Link>
+                            <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                                {/* <li>
+                                    <a className="justify-between">
+                                        Profile
+                                        <span className="badge">New</span>
+                                    </a>
+                                </li> */}
+                                <li><a onClick={toggleMyPlan}>My plan</a></li>
+                                <li><a>Settings</a></li>
+                                <li><a>Logout</a></li>
+                            </ul>
+                        </div>
                     </div>
-                    
-                </div>
-                
-            </div>
-            
 
-            <div ref={drawerRef} className={`fixed z-50 top-0 supersmall:w-[307px] h-full bg-blue-800 rounded-tr-[20px] rounded-br-[20px] lg:flex flex-col items-center gap-12 ${isDrawerOpen ? 'flex' : 'hidden'}`}>
+                </div>
+
+            </div>
+
+            {isMyPlanOpen && <MyPlan onClose={() => setIsMyPlanOpen(false)} />}
+
+            <div ref={drawerRef} className={`fixed z-40 top-0 supersmall:w-[307px] h-full bg-blue-800 rounded-tr-[20px] rounded-br-[20px] lg:flex flex-col items-center gap-12 ${isDrawerOpen ? 'flex' : 'hidden'}`}>
                 <div className='pt-12'>
                     <Link href='/dashboard' className='cursor-pointer'><img className="w-36" src="/logo-white.svg" alt="Logo" /></Link>
                 </div>

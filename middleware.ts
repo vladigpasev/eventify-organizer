@@ -84,6 +84,7 @@ export async function middleware(request: NextRequest) {
         }
 
         // User is verified and payment is set, allow them to continue
+        
         return NextResponse.next();
 
     } catch (error) {

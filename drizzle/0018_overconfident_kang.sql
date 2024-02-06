@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "customerId" varchar(100);

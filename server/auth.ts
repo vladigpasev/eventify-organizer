@@ -18,9 +18,9 @@ import { redirect } from 'next/navigation';
 const db = drizzle(sql);
 
 export async function registerUser(data: any) {
-    const stripe = new Stripe("sk_test_51OUni6KO87GEImsyMm1mtLcaXJlDknUUdtyd4ewl9nDJ1tUBQXmcRqpbg7IIFI4ZF0oqXwOSPEx3RDmnmLSctAnb005qrLhuZj", {
-        apiVersion: "2023-10-16",
-    });
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: '2023-10-16'
+      });
     const userSchema = z.object({
         firstname: z.string(),
         lastname: z.string(),
@@ -54,6 +54,11 @@ export async function registerUser(data: any) {
             type: 'express',
         });
         const payoutId = payoutAccount.id;
+        const customerAccount = await stripe.customers.create({
+            name: data.firstname + ' ' + data.lastname,
+            email: data.email,
+        });
+        const customerId = customerAccount.id;
 
         const user: InferInsertModel<typeof users> = {
             firstname: data.firstname,
@@ -62,6 +67,7 @@ export async function registerUser(data: any) {
             email: data.email,
             password: hashedPassword,
             payoutId: payoutId,
+            customerId: customerId,
         };
 
         // Insert user data into the database using Drizzle's correct insert method
@@ -116,7 +122,9 @@ export async function loginUser(data: any) {
             email_verified: users.email_verified,
             setpayment: users.setpayment,
             payoutCompleted: users.payoutCompleted,
-            payoutId: users.payoutId
+            payoutId: users.payoutId,
+            customerId: users.customerId,
+            plantype: users.planType
         })
             .from(users)
             .where(eq(users.email, data.email))
@@ -140,7 +148,7 @@ export async function loginUser(data: any) {
         }
 
         console.log('User authenticated successfully');
-        const token = jwt.sign({ uuid: user.uuid, email_verified: user.email_verified, email_addr: user.email, setpayment: user.setpayment, payoutId: user.payoutId }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ uuid: user.uuid, email_verified: user.email_verified, email_addr: user.email, setpayment: user.setpayment, payoutId: user.payoutId, customerId: user.customerId, planType: user.plantype }, process.env.JWT_SECRET, { expiresIn: '1h' });
         cookies().set({
             name: 'token',
             value: token,

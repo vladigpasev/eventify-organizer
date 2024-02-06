@@ -15,7 +15,9 @@ export const users = pgTable('users', {
   lastEmailSentAt: timestamp('last_email_sent_at'),
   setpayment: boolean('setpayment').default(false),
   payoutCompleted: boolean('payoutCompleted').default(false),
-  payoutId: varchar('payoutId', { length: 100 })
+  payoutId: varchar('payoutId', { length: 100 }),
+  customerId: varchar('customerId', { length: 100 }),
+  planType: varchar('planType', { length: 100 }).default("Hobby"),
 });
 
 export const events = pgTable('events', {

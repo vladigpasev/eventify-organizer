@@ -12,11 +12,12 @@ import { users } from '@/schema/schema';
 
 const db = drizzle(sql);
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2023-10-16'
+  });
+
 export async function create_checkout_session(prevState: any, formData: FormData) {
     async function getSessionUrl() {
-        const stripe = new Stripe("sk_test_51OUni6KO87GEImsyMm1mtLcaXJlDknUUdtyd4ewl9nDJ1tUBQXmcRqpbg7IIFI4ZF0oqXwOSPEx3RDmnmLSctAnb005qrLhuZj", {
-            apiVersion: "2023-10-16",
-        });
 
         const planSchema = z.object({
             stripe_lookup_key: z.string().nonempty(),
@@ -43,6 +44,7 @@ export async function create_checkout_session(prevState: any, formData: FormData
             const token = cookies().get("token")?.value;
             const decoded = await jwt.verify(token, process.env.JWT_SECRET);
             const userEmail = decoded.email_addr;
+            const customerId = decoded.customerId;
             const session = await stripe.checkout.sessions.create({
                 billing_address_collection: 'auto',
                 line_items: [
@@ -55,7 +57,7 @@ export async function create_checkout_session(prevState: any, formData: FormData
                 mode: 'subscription',
                 success_url: `${process.env.BASE_URL + planData.successUrl}`,
                 cancel_url: `${process.env.BASE_URL + planData.errorUrl}`,
-                customer_email: userEmail,
+                customer: customerId,
             });
 
 
@@ -166,4 +168,16 @@ export async function continueWithFreePlan() {
         // Redirect to the session URL
         //@ts-ignore
         redirect("/dashboard");
+}
+
+export async function manageAccount() {
+    const token = cookies().get("token")?.value;
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+
+    const customerId = decodedToken.customerId;
+    const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.BASE_URL}/dashboard`,
+      });
+      redirect(session.url);
 }

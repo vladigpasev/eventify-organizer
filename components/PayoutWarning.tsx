@@ -6,10 +6,10 @@ import jwt from 'jsonwebtoken';
 import { createPayoutLink } from '@/server/payment/payout';
 import Stripe from 'stripe';
 
-const stripe = new Stripe("sk_test_51OUni6KO87GEImsyMm1mtLcaXJlDknUUdtyd4ewl9nDJ1tUBQXmcRqpbg7IIFI4ZF0oqXwOSPEx3RDmnmLSctAnb005qrLhuZj", {
-    apiVersion: "2023-10-16",
-});
-
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+    apiVersion: '2023-10-16'
+  });
+  
 async function PayoutWarning() {
     const token = cookies().get("token")?.value;
     const decodedToken = jwt.decode(token);
