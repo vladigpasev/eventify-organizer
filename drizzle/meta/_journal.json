@@ -169,6 +169,13 @@
       "when": 1707302105463,
       "tag": "0023_past_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1707319901520,
+      "tag": "0024_flippant_risque",
+      "breakpoints": true
     }
   ]
 }
