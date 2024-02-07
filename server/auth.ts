@@ -124,7 +124,6 @@ export async function loginUser(data: any) {
             payoutCompleted: users.payoutCompleted,
             payoutId: users.payoutId,
             customerId: users.customerId,
-            plantype: users.planType
         })
             .from(users)
             .where(eq(users.email, data.email))
@@ -148,7 +147,7 @@ export async function loginUser(data: any) {
         }
 
         console.log('User authenticated successfully');
-        const token = jwt.sign({ uuid: user.uuid, email_verified: user.email_verified, email_addr: user.email, setpayment: user.setpayment, payoutId: user.payoutId, customerId: user.customerId, planType: user.plantype }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const token = jwt.sign({ uuid: user.uuid, email_verified: user.email_verified, email_addr: user.email, setpayment: user.setpayment, payoutId: user.payoutId, customerId: user.customerId }, process.env.JWT_SECRET, { expiresIn: '1h' });
         cookies().set({
             name: 'token',
             value: token,

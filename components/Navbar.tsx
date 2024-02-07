@@ -9,6 +9,7 @@ import { usePathname } from 'next/navigation'
 import { handleLogout } from '@/server/auth'
 import Bars from '@/public/images/icons/Bars'
 import MyPlan from './MyPlan'
+import { manageAccount } from '@/server/payment/plan'
 
 
 function Navbar() {
@@ -102,8 +103,11 @@ function Navbar() {
                                     </a>
                                 </li> */}
                                 <li><a onClick={toggleMyPlan}>My plan</a></li>
-                                <li><a>Settings</a></li>
-                                <li><a>Logout</a></li>
+                                <li><a><form method="POST" action={manageAccount}>
+                                    <button type="submit">Billing settings</button>
+                                </form></a></li>
+                               { /*<li><a>Settings</a></li> */}
+                                <li><a><form action={handleLogout}><button type='submit'>Logout</button></form></a></li>
                             </ul>
                         </div>
                     </div>
