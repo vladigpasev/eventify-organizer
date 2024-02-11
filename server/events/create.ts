@@ -57,10 +57,3 @@ export async function createEvent(data: any) {
         return { success: false, message: 'Event creation failed' };
     }
 }
-
-
-
-export async function editEvent(data: any) {
-    return { message: "Coming soon" }
-
-}
