@@ -23,7 +23,7 @@ export const users = pgTable('users', {
 export const events = pgTable('events', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
-  eventName: varchar('eventName', { length: 50 }).notNull(),
+  eventName: varchar('eventName', { length: 20 }).notNull(),
   category: varchar('category', { length: 50 }).notNull(),
   description: text('description').notNull(),
   thumbnailUrl: varchar('thumbnailUrl', { length: 100 }).notNull(),

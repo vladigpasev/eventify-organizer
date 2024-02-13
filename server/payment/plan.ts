@@ -20,9 +20,9 @@ export async function create_checkout_session(prevState: any, formData: FormData
     async function getSessionUrl() {
 
         const planSchema = z.object({
-            stripe_lookup_key: z.string().nonempty(),
-            successUrl: z.string().nonempty(),
-            errorUrl: z.string().nonempty(),
+            stripe_lookup_key: z.string().nonempty().nonempty(),
+            successUrl: z.string().nonempty().nonempty(),
+            errorUrl: z.string().nonempty().nonempty(),
         });
         let planData;
         try {

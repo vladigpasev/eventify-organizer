@@ -22,12 +22,12 @@ export async function registerUser(data: any) {
         apiVersion: '2023-10-16'
       });
     const userSchema = z.object({
-        firstname: z.string(),
-        lastname: z.string(),
-        company: z.string(),
-        email: z.string().email(),
-        password: z.string().min(10).max(100),
-        confirmPassword: z.string(),
+        firstname: z.string().nonempty(),
+        lastname: z.string().nonempty(),
+        company: z.string().nonempty(),
+        email: z.string().nonempty().email(),
+        password: z.string().nonempty().min(10).max(100),
+        confirmPassword: z.string().nonempty(),
     }).refine(data => data.password === data.confirmPassword, {
         message: "Passwords don't match",
         path: ["confirmPassword"],
@@ -95,8 +95,8 @@ export async function registerUser(data: any) {
 
 export async function loginUser(data: any) {
     const loginSchema = z.object({
-        email: z.string().email(),
-        password: z.string(),
+        email: z.string().nonempty().email(),
+        password: z.string().nonempty(),
     });
     console.log('Received login data:', data);
     if (!data || typeof data !== 'object') {

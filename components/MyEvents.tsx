@@ -67,7 +67,7 @@ async function MyEvents() {
                                         <EurSign />
                                         <div className="text-black text-xs font-medium leading-tight">{event.isFree ? 'Free' : `From ${event.price} BGN`}</div>
                                     </div>
-                                    <Link href={`/dashboard/events/${event.uuid}`}><div className='cursor-pointer text-blue-800 hover:opacity-80'><GoSvg /></div></Link>
+                                    <a href={`/dashboard/events/${event.uuid}`}><div className='cursor-pointer text-blue-800 hover:opacity-80'><GoSvg /></div></a>
                                 </div>
                             </div>
                         </div>

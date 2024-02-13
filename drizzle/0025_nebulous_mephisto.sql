@@ -1,0 +1,1 @@
+ALTER TABLE "events" ALTER COLUMN "eventName" SET DATA TYPE varchar(20);

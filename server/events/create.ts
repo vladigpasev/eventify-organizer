@@ -19,14 +19,14 @@ const db = drizzle(sql);
 export async function createEvent(data: any) {
     // Define a schema for event data validation
     const eventSchema = z.object({
-        eventName: z.string(),
-        category: z.string(),
-        description: z.string(),
-        thumbnailUrl: z.string(),
-        location: z.string(),
+        eventName: z.string().nonempty(),
+        category: z.string().nonempty(),
+        description: z.string().nonempty(),
+        thumbnailUrl: z.string().nonempty(),
+        location: z.string().nonempty(),
         isFree: z.boolean(),
         price: z.any(),
-        dateTime: z.string().refine(
+        dateTime: z.string().nonempty().refine(
             (dateString) => {
                 const date = new Date(dateString);
                 return !isNaN(date.getTime()) && date > new Date();
