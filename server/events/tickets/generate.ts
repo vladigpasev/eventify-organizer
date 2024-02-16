@@ -142,3 +142,8 @@ export async function createManualTicket(data: any) {
     }
 
 }
+
+export async function deactivateManualTicket(customerUuid:any) {
+    await db.delete(eventCustomers).where(eq(eventCustomers.uuid, customerUuid));
+    return { success: true, message: 'Ticket deactivated successfully!' };
+}

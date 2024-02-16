@@ -19,6 +19,8 @@ import EventPriceEditor from '@/components/ManageEvent/PriceEdit';
 import AddCustomer from '@/components/ManageEvent/AddCustomer';
 import Link from 'next/link';
 import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
+import CheckTicket from '@/components/ManageEvent/CheckTickets';
+import TicketActionsBtn from '@/components/ManageEvent/TicketActionsBtn';
 
 const db = drizzle(sql);
 
@@ -58,11 +60,12 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     .execute();
 
   const currentCustomerDb = await db.select({
+    uuid: eventCustomers.uuid,
     firstname: eventCustomers.firstname,
     lastname: eventCustomers.lastname,
     email: eventCustomers.email,
     guestCount: eventCustomers.guestCount,
-    ticketToken: eventCustomers.ticketToken
+    ticketToken: eventCustomers.ticketToken,
   })
     .from(eventCustomers)
     .where(eq(eventCustomers.eventUuid, params.uuid))
@@ -104,7 +107,10 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
         <div className="bg-white shadow rounded p-4">
           <div className='flex justify-between items-center'>
             <h2 className="text-xl font-semibold mb-3">Tickets</h2>
-            <AddCustomer eventId={params.uuid} />
+            <div className='flex gap-2 sm:flex-row flex-col'>
+              <AddCustomer eventId={params.uuid} />
+              <CheckTicket eventId={params.uuid} />
+            </div>
           </div>
           {/* Customer list and management buttons */}
           <div className="overflow-x-auto">
@@ -137,13 +143,14 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
                     <td>{customer.email}</td>
                     <td>{customer.guestCount}</td>
                     <th>
-                      <Link className="btn btn-ghost btn-xs text-black" href={`http://localhost:3001/`+customer.ticketToken} target='_blank'><svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor'/></svg></Link>
+                      <Link className="btn btn-ghost btn-xs text-black" href={process.env.TICKETS_BASE_URL + `/` + customer.ticketToken} target='_blank'><svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor' /></svg></Link>
                     </th>
+                    <th><TicketActionsBtn ticketToken={customer.ticketToken} eventId={params.uuid}/></th>
                     {/* <th>
                       <button className="btn btn-ghost btn-xs bg-blue-500 text-white">actions</button>
                     </th> */}
                     <th>
-                      <TicketDeactivateBtn />
+                      <TicketDeactivateBtn customerUuid={customer.uuid} />
                     </th>
                   </tr>
                 ))}

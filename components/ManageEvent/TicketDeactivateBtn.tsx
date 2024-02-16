@@ -1,13 +1,36 @@
 "use client"
-import React from 'react'
+import React, { useState } from 'react';
+import { deactivateManualTicket } from '@/server/events/tickets/generate';
 
+//@ts-ignore
+function TicketDeactivateBtn({ customerUuid }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDeactivated, setIsDeactivated] = useState(false);
 
-function TicketDeactivateBtn() {
+  const deactivateTicket = async () => {
+    try {
+      setIsLoading(true);
+      await deactivateManualTicket(customerUuid);
+      setIsDeactivated(true); // On success, mark as deactivated
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Failed to deactivate ticket:', error);
+      setIsLoading(false);
+      // Handle error state here
+    }
+  };
+
   return (
     <div>
-        <button className="btn btn-ghost btn-xs bg-red-500 text-white">deactivate</button>
+      <button 
+        className={`btn btn-ghost btn-xs ${isDeactivated ? '' : 'bg-red-500'} text-white`}
+        onClick={!isDeactivated && !isLoading ? deactivateTicket : undefined}
+        disabled={isLoading || isDeactivated}
+      >
+        {isLoading ? 'Loading...' : isDeactivated ? 'Deactivated' : 'Deactivate'}
+      </button>
     </div>
-  )
+  );
 }
 
-export default TicketDeactivateBtn
+export default TicketDeactivateBtn;

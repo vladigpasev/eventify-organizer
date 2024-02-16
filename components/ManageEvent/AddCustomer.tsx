@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createManualTicket } from '@/server/events/tickets/generate';
 //@ts-ignore
-function AddCustomer({eventId}) {
+function AddCustomer({ eventId }) {
     // State to control modal visibility
     const [isModalOpen, setModalOpen] = useState(false);
 
@@ -12,16 +12,18 @@ function AddCustomer({eventId}) {
 
     return (
         <div>
-            <div onClick={toggleModal} className='text-gray-600 flex flex-row justify-center items-center btn'><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={20} fill='currentColor'><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z" fill='currentColor' /></svg><div> Add manually</div></div>
+            <div onClick={toggleModal} className='text-gray-600 flex flex-row justify-center items-center btn'><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={20} fill='currentColor'><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z" fill='currentColor' /></svg><div> Add ticket</div></div>
             {isModalOpen && <Modal toggleModal={toggleModal} eventId={eventId} />}
         </div>
     );
 }
 //@ts-ignore
 function Modal({ toggleModal, eventId }) {
+    const [isLoading, setIsLoading] = useState(false);
     //@ts-ignore
     const handleSubmit = async (event) => {
         event.preventDefault(); // Prevent default form submission
+        setIsLoading(true); // Set loading state to true when submission starts
 
         const formData = {
             firstname: event.target.name.value,
@@ -35,12 +37,14 @@ function Modal({ toggleModal, eventId }) {
         try {
             await createManualTicket(formData);
             toggleModal(); // Close modal on successful submission
-            // Optionally, you can add more logic here for success state
         } catch (error) {
             console.error('Failed to create manual ticket:', error);
             // Handle error state here
+        } finally {
+            setIsLoading(false); // Reset loading state whether submission is successful or fails
         }
     };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center px-4 z-50">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full">
@@ -97,8 +101,9 @@ function Modal({ toggleModal, eventId }) {
                     <button
                         type="submit"
                         className="btn bg-blue-500 text-white w-full"
+                        disabled={isLoading} // Disable the button when loading
                     >
-                        Add user
+                        {isLoading ? 'Loading...' : 'Add user'}
                     </button>
                 </form>
                 <button

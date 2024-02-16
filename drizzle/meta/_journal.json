@@ -218,6 +218,13 @@
       "when": 1707914933133,
       "tag": "0030_lush_leopardon",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "5",
+      "when": 1708094465140,
+      "tag": "0031_large_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

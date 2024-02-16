@@ -58,6 +58,7 @@ const LocationChanger = ({ initialLocation, eventId }) => {
                             onChange={handleLocationChange}
                             className="focus:input focus:input-bordered w-full border-b-2"
                             placeholder="Location"
+                            autoComplete = "on"
                         />
                     </Autocomplete>
                 </p>

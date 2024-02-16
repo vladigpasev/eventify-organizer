@@ -1,0 +1,1 @@
+ALTER TABLE "eventCustomers" ADD COLUMN "isEntered" boolean DEFAULT false;

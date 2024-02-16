@@ -43,4 +43,5 @@ export const eventCustomers = pgTable('eventCustomers', {
   guestCount: numeric('guestCount').notNull().default('1'),
   eventUuid: varchar('eventUuid', {length: 100}).notNull(),
   ticketToken: varchar('ticketToken', {length: 255}), // New field for the ticket token
+  isEntered: boolean('isEntered').default(false),
 });
