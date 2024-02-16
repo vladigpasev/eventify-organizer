@@ -1,0 +1,1 @@
+ALTER TABLE "eventCustomers" DROP CONSTRAINT "eventCustomers_email_unique";

@@ -3,7 +3,7 @@ import React from 'react';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { eq } from 'drizzle-orm';
-import { events } from '../../../../schema/schema';
+import { eventCustomers, events } from '../../../../schema/schema';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers'
@@ -16,6 +16,9 @@ import EventThumbnailChanger from '@/components/ManageEvent/EventThumbnailChange
 import EventDateTimeEditor from '@/components/ManageEvent/EventDateTimeEditor';
 import LocationChanger from '@/components/ManageEvent/LocationChanger';
 import EventPriceEditor from '@/components/ManageEvent/PriceEdit';
+import AddCustomer from '@/components/ManageEvent/AddCustomer';
+import Link from 'next/link';
+import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
 
 const db = drizzle(sql);
 
@@ -54,6 +57,17 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     .where(eq(events.uuid, params.uuid))
     .execute();
 
+  const currentCustomerDb = await db.select({
+    firstname: eventCustomers.firstname,
+    lastname: eventCustomers.lastname,
+    email: eventCustomers.email,
+    guestCount: eventCustomers.guestCount,
+    ticketToken: eventCustomers.ticketToken
+  })
+    .from(eventCustomers)
+    .where(eq(eventCustomers.eventUuid, params.uuid))
+    .execute();
+
   if (currentEventDb.length > 0) {
     // There are results
   } else {
@@ -61,7 +75,6 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
   }
 
   const currentEvent = currentEventDb[0];
-
 
   if (userUuid != currentEvent.userUuid) {
     notFound();
@@ -72,24 +85,71 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
 
   return (
     <div className="container mx-auto p-4">
-      <p className='text-gray-400 mb-5'>*Editing any significat information about your event may make your customers ask for refund! They will be notified about the changes and will have the opportunity do it. All tickets will be reissued!</p>
-      <p className='text-gray-400 mb-5'>**Any price changes will apply to new customers only!</p>
+
       <EventTitleEditor initialTitle={currentEvent.eventName} eventId={params.uuid} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white shadow rounded p-4">
-          
+
           {/* Replace "input" with controlled components with your state */}
           <EventDescriptionEditor initialDescription={currentEvent.description} eventId={params.uuid} />
           <EventThumbnailChanger initialThumbnailUrl={currentEvent.thumbnailUrl} eventId={params.uuid} />
           <EventDateTimeEditor initialDateTime={currentEvent.dateTime} eventId={params.uuid} />
           <LocationChanger initialLocation={currentEvent.location} eventId={params.uuid} />
           <EventPriceEditor initialPrice={currentEvent.price} isFree={currentEvent.isFree} eventId={params.uuid} />
+          <p className='text-gray-400 mb-5'>*Editing any significat information about your event may make your customers ask for refund! They will be notified about the changes and will have the opportunity do it. All tickets will be reissued!</p>
+          <p className='text-gray-400 mb-5'>**Any price changes will apply to new customers only!</p>
           {/* Add more fields for description, thumbnail, location, etc. */}
         </div>
         <div className="bg-white shadow rounded p-4">
-          <h2 className="text-xl font-semibold mb-3">Customers</h2>
+          <div className='flex justify-between items-center'>
+            <h2 className="text-xl font-semibold mb-3">Tickets</h2>
+            <AddCustomer eventId={params.uuid} />
+          </div>
           {/* Customer list and management buttons */}
+          <div className="overflow-x-auto">
+            <table className="table">
+              {/* head */}
+              <thead>
+                <tr>
+                  <th>
+                  </th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Guests</th>
+                  <th></th>
+                  <th></th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentCustomerDb.map((customer, index) => (
+                  <tr key={index}>
+                    <th></th>
+                    <td>
+                      <div className="flex items-center ">
+                        <div className="avatar"></div>
+                        <div>
+                          <div className="font-bold">{`${customer.firstname} ${customer.lastname}`}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{customer.email}</td>
+                    <td>{customer.guestCount}</td>
+                    <th>
+                      <Link className="btn btn-ghost btn-xs text-black" href={`http://localhost:3001/`+customer.ticketToken} target='_blank'><svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor'/></svg></Link>
+                    </th>
+                    {/* <th>
+                      <button className="btn btn-ghost btn-xs bg-blue-500 text-white">actions</button>
+                    </th> */}
+                    <th>
+                      <TicketDeactivateBtn />
+                    </th>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
       <div className="bg-white shadow rounded p-4 mt-4">

@@ -33,3 +33,14 @@ export const events = pgTable('events', {
   userUuid: varchar('userUuid', {length: 100}).notNull(),
   dateTime: varchar('dateTime', {length: 100}).notNull()
 });
+
+export const eventCustomers = pgTable('eventCustomers', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
+  firstname: varchar('firstname', { length: 50 }).notNull(),
+  lastname: varchar('lastname', { length: 50 }).notNull(),
+  email: varchar('email', { length: 100 }).notNull(),
+  guestCount: numeric('guestCount').notNull().default('1'),
+  eventUuid: varchar('eventUuid', {length: 100}).notNull(),
+  ticketToken: varchar('ticketToken', {length: 255}), // New field for the ticket token
+});
