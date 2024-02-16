@@ -225,6 +225,20 @@
       "when": 1708094465140,
       "tag": "0031_large_steel_serpent",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1708112805392,
+      "tag": "0032_dear_spot",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1708112872992,
+      "tag": "0033_unusual_mercury",
+      "breakpoints": true
     }
   ]
 }

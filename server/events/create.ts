@@ -26,6 +26,7 @@ export async function createEvent(data: any) {
         location: z.string().nonempty(),
         isFree: z.boolean(),
         price: z.any(),
+        visibility: z.string().nonempty(),
         dateTime: z.string().nonempty().refine(
             (dateString) => {
                 const date = new Date(dateString);

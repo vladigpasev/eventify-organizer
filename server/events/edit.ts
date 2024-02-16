@@ -167,3 +167,26 @@ export async function editPrice(data: any) {
 
     }
 }
+
+export async function changeVisibility(data: any) {
+    const visibilitySchema = z.object({
+        uuid: z.string().nonempty(),
+        visibility: z.enum(['public', 'private']),
+    });
+
+    try {
+        const validatedData = visibilitySchema.parse(data);
+
+        await db.update(events)
+            .set({
+                visibility: validatedData.visibility,
+            })
+            .where(eq(events.uuid, validatedData.uuid));
+
+        console.log(`Visibility changed to ${validatedData.visibility} for event ${validatedData.uuid}`);
+        return { success: true, message: 'Event visibility updated successfully!' };
+    } catch (error) {
+        console.error('Error:', error);
+        return { success: false, message: 'Event visibility edit failed.' };
+    }
+}

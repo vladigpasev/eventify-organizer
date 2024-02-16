@@ -121,10 +121,12 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             description: e.currentTarget.description.value,
             thumbnailUrl,
             location: e.currentTarget.location.value,
+            visibility: e.currentTarget.visibility.value,
             isFree: isFreeEvent,
             price: isFreeEvent ? 0 : parseFloat(parseFloat(e.currentTarget.price.value).toFixed(2)),
             dateTime,
         };
+    
 
         try {
             let response;

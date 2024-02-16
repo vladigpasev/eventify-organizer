@@ -21,6 +21,7 @@ import Link from 'next/link';
 import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
 import CheckTicket from '@/components/ManageEvent/CheckTickets';
 import TicketActionsBtn from '@/components/ManageEvent/TicketActionsBtn';
+import PublicPrivateToggle from '@/components/ManageEvent/PublicPrivateToggle';
 
 const db = drizzle(sql);
 
@@ -54,6 +55,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     location: events.location,
     price: events.price,
     isFree: events.isFree,
+    visibility: events.visibility,
   })
     .from(events)
     .where(eq(events.uuid, params.uuid))
@@ -93,12 +95,11 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white shadow rounded p-4">
-
-          {/* Replace "input" with controlled components with your state */}
           <EventDescriptionEditor initialDescription={currentEvent.description} eventId={params.uuid} />
           <EventThumbnailChanger initialThumbnailUrl={currentEvent.thumbnailUrl} eventId={params.uuid} />
           <EventDateTimeEditor initialDateTime={currentEvent.dateTime} eventId={params.uuid} />
           <LocationChanger initialLocation={currentEvent.location} eventId={params.uuid} />
+          <PublicPrivateToggle initialVisibility={currentEvent.visibility} eventId={params.uuid} />
           <EventPriceEditor initialPrice={currentEvent.price} isFree={currentEvent.isFree} eventId={params.uuid} />
           <p className='text-gray-400 mb-5'>*Editing any significat information about your event may make your customers ask for refund! They will be notified about the changes and will have the opportunity do it. All tickets will be reissued!</p>
           <p className='text-gray-400 mb-5'>**Any price changes will apply to new customers only!</p>

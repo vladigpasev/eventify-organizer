@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "visibility" varchar(100) NOT NULL;

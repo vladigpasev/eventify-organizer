@@ -154,9 +154,14 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                         <svg className="mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} width={50} height={50}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         <p className="text-xl font-bold">Ticket is Not Valid</p>
                     </div>
-                    <button onClick={() => { setScanResult(null) }} className="btn bg-red-500 text-white mt-4">
-                        Scan Another One
-                    </button>
+                    <div className='flex flex-col justify-center gap-5'>
+                        <button onClick={() => { setScanResult(null) }} className="btn bg-red-500 text-white mt-4">
+                            Scan Another One
+                        </button>
+                        <button onClick={() => { setScanResult(null); toggleModal(); }} className="link mt-4">
+                            Close
+                        </button>
+                    </div>
                 </div>
             );
         }
