@@ -4,7 +4,7 @@ import { z } from 'zod';
 import bcrypt from 'bcrypt';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { events } from '../../schema/schema';
+import { eventCustomers, events } from '../../schema/schema';
 import { InferInsertModel } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
@@ -188,5 +188,16 @@ export async function changeVisibility(data: any) {
     } catch (error) {
         console.error('Error:', error);
         return { success: false, message: 'Event visibility edit failed.' };
+    }
+}
+//@ts-ignore
+export async function deleteEvent(eventUuid) {
+    try {
+        await db.delete(events).where(eq(events.uuid, eventUuid));
+        await db.delete(eventCustomers).where(eq(eventCustomers.eventUuid, eventUuid));
+        return { success: true };
+    } catch (error) {
+        console.error('Error:', error);
+        return { success: false, message: 'Event deletion failed.' };
     }
 }

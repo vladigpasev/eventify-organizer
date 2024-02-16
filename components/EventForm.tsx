@@ -176,6 +176,9 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                         className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
                                         placeholder={field.placeholder}
                                         rows={10}
+                                        required
+                                        minLength={20}
+                                        maxLength={1000}
                                     />
                                 ) : field.type === "select" ? (
                                     <select
@@ -197,6 +200,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                         min={minDateTime} // Add this line
                                         className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
                                         placeholder={field.placeholder}
+                                        required
                                     />
                                 ) : (
                                     <input
@@ -206,6 +210,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                         defaultValue={initialData?.[field.id as keyof EventFormData]}
                                         className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
                                         placeholder={field.placeholder}
+                                        required
                                     />
                                 )}
                             </div>
@@ -258,6 +263,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                             defaultValue={initialData?.location}
                             className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
                             placeholder="Start typing location"
+                            required
                         />
                     </Autocomplete>
                 </div>
@@ -289,8 +295,9 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                 defaultValue={initialData?.price}
                                 className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
                                 placeholder="Enter event price"
-                                min="0"
+                                min="0.01"
                                 step="0.01"
+                                required
                             />
                         </div>
                     )}

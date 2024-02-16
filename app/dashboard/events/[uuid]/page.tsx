@@ -22,6 +22,7 @@ import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
 import CheckTicket from '@/components/ManageEvent/CheckTickets';
 import TicketActionsBtn from '@/components/ManageEvent/TicketActionsBtn';
 import PublicPrivateToggle from '@/components/ManageEvent/PublicPrivateToggle';
+import DeleteEvent from '@/components/ManageEvent/DeleteEvent';
 
 const db = drizzle(sql);
 
@@ -168,6 +169,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
         <button className="btn btn-primary">Save Changes</button>
         <button className="btn btn-accent">Delete Event</button>
       </div> */}
+      <DeleteEvent eventId={params.uuid} />
     </div>
   );
 };
