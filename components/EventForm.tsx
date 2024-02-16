@@ -1,8 +1,9 @@
-"use client";
-import React, { useState } from 'react';
+"use client"
+import React, { useState, useRef } from 'react';
 import { LoadScript, Autocomplete } from '@react-google-maps/api';
 import { UploadButton } from "@/utils/uploadthing";
 import { createEvent } from '@/server/events/create';
+import { generateDescription } from '@/server/events/generateDescription';
 
 interface Field {
     id: string;
@@ -87,6 +88,8 @@ const validateDateTime = (dateTime: any) => {
 const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
     const [thumbnailUrl, setThumbnailUrl] = useState<string>(initialData?.thumbnailUrl || '/images/pngs/event.png');
     const [isFreeEvent, setIsFreeEvent] = useState<boolean>(initialData?.isFree || false);
+    const [isLoadingDescription, setIsLoadingDescription] = useState<boolean>(false);
+    const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
     const handleUploadComplete = async (res: any) => {
         const file = res[0];
@@ -97,9 +100,34 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
         console.error("Upload error:", error);
     };
 
+    const handleGenerateDescription = async (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        setIsLoadingDescription(true); // Start loading
+        //@ts-ignore
+        const eventName = e.currentTarget.form.eventName.value;
+        //@ts-ignore
+        const category = e.currentTarget.form.category.value;
+
+        if (!eventName || !category) {
+            alert('Event Name and Category are required to generate a description.');
+            return;
+        }
+
+        try {
+            const generatedText = await generateDescription(eventName, category);
+            if (descriptionRef.current) {
+                descriptionRef.current.value = generatedText;
+            }
+        } catch (error) {
+            console.error('Error generating description:', error);
+        } finally {
+            setIsLoadingDescription(false); // Stop loading
+        }
+
+    };
+
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-
 
         const isValid = validateField("eventName", e.currentTarget.eventName.value) &&
             validateField("category", e.currentTarget.category.value) &&
@@ -114,7 +142,6 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             return;
         }
 
-
         const formData: EventFormData = {
             eventName: e.currentTarget.eventName.value,
             category: e.currentTarget.category.value,
@@ -126,18 +153,15 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             price: isFreeEvent ? 0 : parseFloat(parseFloat(e.currentTarget.price.value).toFixed(2)),
             dateTime,
         };
-    
 
         try {
             let response;
             if (type === 'create') {
-                // Invoke the CreateEvent Server Action for creating events
                 response = await createEvent(formData);
             } else {
                 // Invoke the EditEvent Server Action for editing events
                 //response = await editEvent(formData);
             }
-
 
             if (type === 'create') {
                 console.log('Creating event with data:', formData);
@@ -146,9 +170,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             }
             console.log('Server Action Response:', response);
         } catch (error) {
-            // Handle any errors
             console.error('Error submitting event:', error);
-            // Implement your error handling logic here
         }
     };
     const minDateTime = new Date().toISOString().slice(0, 16);
@@ -169,17 +191,29 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                     {field.label}
                                 </label>
                                 {field.isTextArea ? (
-                                    <textarea
-                                        id={field.id}
-                                        //@ts-ignore
-                                        defaultValue={initialData?.[field.id as keyof EventFormData]}
-                                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
-                                        placeholder={field.placeholder}
-                                        rows={10}
-                                        required
-                                        minLength={20}
-                                        maxLength={1000}
-                                    />
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary mb-2"
+                                            onClick={handleGenerateDescription}
+                                            disabled={isLoadingDescription} // Disable button during loading
+                                        >
+                                            {isLoadingDescription ? "Loading..." : "Generate with AI"}
+                                        </button>
+                                        <textarea
+                                            ref={descriptionRef}
+                                            id={field.id}
+                                            //@ts-ignore
+                                            defaultValue={initialData?.[field.id as keyof EventFormData]}
+                                            className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
+                                            placeholder={field.placeholder}
+                                            rows={10}
+                                            required
+                                            minLength={20}
+                                            maxLength={1000}
+                                            disabled={isLoadingDescription}
+                                        />
+                                    </>
                                 ) : field.type === "select" ? (
                                     <select
                                         id={field.id}
@@ -197,7 +231,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                         type={field.type}
                                         //@ts-ignore
                                         defaultValue={initialData?.[field.id as keyof EventFormData]}
-                                        min={minDateTime} // Add this line
+                                        min={minDateTime}
                                         className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
                                         placeholder={field.placeholder}
                                         required
@@ -211,6 +245,8 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                         className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 py-4"
                                         placeholder={field.placeholder}
                                         required
+                                        minLength={3}
+                                        maxLength={20}
                                     />
                                 )}
                             </div>
@@ -304,8 +340,13 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                 </div>
 
                 <div className="flex justify-center mt-6 mb-6">
-                    <button type="submit" className="btn btn-wide btn-primary text-white">Create Event</button>
+                    <button type="submit" className="btn btn-wide btn-primary text-white">
+                        {type === 'create' ? 'Create Event' : 'Edit Event'}
+                    </button>
                 </div>
+
+                {/* ...end of the form */}
+
             </form>
         </LoadScript>
     );
