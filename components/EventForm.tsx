@@ -102,7 +102,6 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
 
     const handleGenerateDescription = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        setIsLoadingDescription(true); // Start loading
         //@ts-ignore
         const eventName = e.currentTarget.form.eventName.value;
         //@ts-ignore
@@ -112,6 +111,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             alert('Event Name and Category are required to generate a description.');
             return;
         }
+        setIsLoadingDescription(true);
 
         try {
             const generatedText = await generateDescription(eventName, category);

@@ -1,21 +1,5 @@
 'use server';
-import { z } from 'zod';
-//@ts-ignore
-import bcrypt from 'bcrypt';
-import { sql } from '@vercel/postgres';
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { events, users } from '../../schema/schema';
-import { InferInsertModel } from 'drizzle-orm';
-import { eq } from 'drizzle-orm';
-//@ts-ignore
-import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers'
-//@ts-ignore
-import nodemailer from 'nodemailer';
-import { redirect } from 'next/navigation';
 import OpenAI from 'openai';
-
-const db = drizzle(sql);
 
 const openai = new OpenAI({
     organization: "org-aNz8Hs6PinAJZz5FQPF9HbjN",
