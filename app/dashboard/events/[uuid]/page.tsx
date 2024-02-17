@@ -169,7 +169,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
         <button className="btn btn-primary">Save Changes</button>
         <button className="btn btn-accent">Delete Event</button>
       </div> */}
-      <DeleteEvent eventId={params.uuid} />
+      <DeleteEvent eventId={params.uuid} eventName={currentEvent.eventName}/>
     </div>
   );
 };
