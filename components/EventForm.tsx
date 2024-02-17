@@ -4,6 +4,7 @@ import { LoadScript, Autocomplete } from '@react-google-maps/api';
 import { UploadButton } from "@/utils/uploadthing";
 import { createEvent } from '@/server/events/create';
 import { generateDescription } from '@/server/events/generateDescription';
+import { useRouter } from 'next/navigation';
 
 interface Field {
     id: string;
@@ -90,6 +91,9 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
     const [isFreeEvent, setIsFreeEvent] = useState<boolean>(initialData?.isFree || false);
     const [isLoadingDescription, setIsLoadingDescription] = useState<boolean>(false);
     const descriptionRef = useRef<HTMLTextAreaElement>(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const router = useRouter();
+
 
     const handleUploadComplete = async (res: any) => {
         const file = res[0];
@@ -128,13 +132,17 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        setIsSubmitting(true);
 
         const isValid = validateField("eventName", e.currentTarget.eventName.value) &&
             validateField("category", e.currentTarget.category.value) &&
             validateField("description", e.currentTarget.description.value) &&
             validateField("location", e.currentTarget.location.value);
 
-        if (!isValid) return;
+        if (!isValid) {
+            setIsSubmitting(false);
+            return;
+        }
 
         const dateTime = e.currentTarget.dateTime.value;
         if (!validateDateTime(dateTime)) {
@@ -159,8 +167,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
             if (type === 'create') {
                 response = await createEvent(formData);
             } else {
-                // Invoke the EditEvent Server Action for editing events
-                //response = await editEvent(formData);
+                // response = await editEvent(formData);
             }
 
             if (type === 'create') {
@@ -169,8 +176,10 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                 console.log('Editing event with data:', formData);
             }
             console.log('Server Action Response:', response);
+            router.replace('/dashboard');
         } catch (error) {
             console.error('Error submitting event:', error);
+            setIsSubmitting(false);
         }
     };
     const minDateTime = new Date().toISOString().slice(0, 16);
@@ -340,13 +349,14 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                 </div>
 
                 <div className="flex justify-center mt-6 mb-6">
-                    <button type="submit" className="btn btn-wide btn-primary text-white">
-                        {type === 'create' ? 'Create Event' : 'Edit Event'}
+                    <button
+                        type="submit"
+                        className="btn btn-wide btn-primary text-white"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting ? 'Submitting...' : (type === 'create' ? 'Create Event' : 'Edit Event')}
                     </button>
                 </div>
-
-                {/* ...end of the form */}
-
             </form>
         </LoadScript>
     );
