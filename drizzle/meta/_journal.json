@@ -239,6 +239,55 @@
       "when": 1708112872992,
       "tag": "0033_unusual_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "5",
+      "when": 1708254712675,
+      "tag": "0034_daily_silverclaw",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "5",
+      "when": 1708254835029,
+      "tag": "0035_complete_tiger_shark",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1708255234586,
+      "tag": "0036_neat_carnage",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1708271172586,
+      "tag": "0037_new_mandrill",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1708281924217,
+      "tag": "0038_fluffy_stature",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1708282389479,
+      "tag": "0039_clear_dragon_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1708292981888,
+      "tag": "0040_goofy_charles_xavier",
+      "breakpoints": true
     }
   ]
 }

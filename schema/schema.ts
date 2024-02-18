@@ -33,6 +33,8 @@ export const events = pgTable('events', {
   userUuid: varchar('userUuid', {length: 100}).notNull(),
   dateTime: varchar('dateTime', {length: 100}).notNull(),
   visibility: varchar('visibility', {length: 100}).notNull().default("public"),
+  //@ts-ignore
+  updatedAt: timestamp('updated_at').default(`now()`),
 });
 
 export const eventCustomers = pgTable('eventCustomers', {
@@ -45,4 +47,17 @@ export const eventCustomers = pgTable('eventCustomers', {
   eventUuid: varchar('eventUuid', {length: 100}).notNull(),
   ticketToken: varchar('ticketToken', {length: 255}), // New field for the ticket token
   isEntered: boolean('isEntered').default(false),
+  clerkUserId: varchar('clerkUserId', { length: 100 }),
+});
+
+export const comments = pgTable('comments', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
+  commentText: text('comment_text').notNull(),
+  eventId: uuid('event_id').notNull(), 
+  userName: varchar('userName', {length: 100}),
+  //@ts-ignore
+  createdAt: timestamp('created_at').default(`now()`), 
+  //@ts-ignore
+  updatedAt: timestamp('updated_at').default(`now()`), 
 });

@@ -20,7 +20,7 @@ const db = drizzle(sql);
 export async function registerUser(data: any) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
         apiVersion: '2023-10-16'
-      });
+    });
     const userSchema = z.object({
         firstname: z.string().nonempty(),
         lastname: z.string().nonempty(),
@@ -52,6 +52,15 @@ export async function registerUser(data: any) {
         const hashedPassword = await bcrypt.hash(data.password, 10);
         const payoutAccount = await stripe.accounts.create({
             type: 'express',
+            capabilities: {
+                card_payments: {
+                    requested: true,
+                },
+                transfers: {
+                    requested: true,
+                },
+            },
+
         });
         const payoutId = payoutAccount.id;
         const customerAccount = await stripe.customers.create({

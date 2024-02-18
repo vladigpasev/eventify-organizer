@@ -1,0 +1,1 @@
+ALTER TABLE "comments" ADD COLUMN "senderUuid" varchar(100);
