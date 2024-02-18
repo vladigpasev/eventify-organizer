@@ -13,6 +13,7 @@ import { cookies } from 'next/headers'
 //@ts-ignore
 import nodemailer from 'nodemailer';
 import { redirect } from 'next/navigation';
+import { getSubscriptionStatus } from '../payment/plan';
 
 const db = drizzle(sql);
 
@@ -41,6 +42,53 @@ export async function createEvent(data: any) {
     const token = cookies().get("token")?.value;
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     const userUuid = decodedToken.uuid;
+    const userPlan = await getSubscriptionStatus();
+
+    let subscriptionPlan;
+    if (userPlan && userPlan.status === 'active') {
+        subscriptionPlan = userPlan.plan;
+        console.log(subscriptionPlan);
+    } else {
+        subscriptionPlan = 'hobby';
+    }
+
+    switch (subscriptionPlan) {
+        case 'hobby':
+            const eventsQueryResultHobby = await db.select()
+                .from(events)
+                .where(eq(events.userUuid, userUuid))
+                .execute();
+            if (eventsQueryResultHobby.length >= 5) {
+                return { success: false, message: 'You are currently with a hobby plan. You can create up to 5 events. Please upgrade your plan or delete old events to create more!' };
+            } else {
+                //User can create more events
+            }
+            break;
+        case 'basic_plan':
+            const eventsQueryResultBasic = await db.select()
+                .from(events)
+                .where(eq(events.userUuid, userUuid))
+                .execute();
+            if (eventsQueryResultBasic.length >= 20) {
+                return { success: false, message: 'You are currently with a basic plan. You can create up to 20 events. Please upgrade your plan or delete old events to create more!' };
+            } else {
+                //User can create more events
+            }
+            break;
+        case 'premium_plan':
+            break;
+        default:
+            const eventsQueryResultNoPlan = await db.select()
+                .from(events)
+                .where(eq(events.userUuid, userUuid))
+                .execute();
+            if (eventsQueryResultNoPlan.length >= 5) {
+                return { success: false, message: 'Please upgrade your plan' };
+            } else {
+                //User can create more events
+            }
+            break;
+    }
 
     try {
         const validatedData = eventSchema.parse(data);

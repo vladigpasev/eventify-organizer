@@ -176,7 +176,14 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                 console.log('Editing event with data:', formData);
             }
             console.log('Server Action Response:', response);
-            router.replace('/dashboard');
+            if(response?.success===true){
+                router.replace('/dashboard');
+            }else{
+                setIsSubmitting(false);
+                alert(response?.message);
+                console.error('Error submitting event:', response?.message);
+            }
+            
         } catch (error) {
             console.error('Error submitting event:', error);
             setIsSubmitting(false);
