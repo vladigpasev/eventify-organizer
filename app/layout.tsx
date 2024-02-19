@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Eventify Organizer',
-  description: 'Wellcome to Eventify Organizer! Here you can create your own events, that can be seen from other users and the perfect target audience.',
+  description: 'Добре дошли в Eventify Organizer! Тук можете да създавате свои собствени събития, които могат да бъдат видени от други потребители и перфектната целева аудитория.',
 }
 
 export default function RootLayout({

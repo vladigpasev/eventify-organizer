@@ -146,7 +146,7 @@ function Register() {
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                                         </svg>
-                                        Back
+                                        Назад
                                     </button>
                                 )}
                                 {/* Fields for Step 1 */}
@@ -154,17 +154,17 @@ function Register() {
                                     <>
                                         {/* First Name */}
                                         <div>
-                                            <label htmlFor="firstname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">First Name</label>
+                                            <label htmlFor="firstname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Първо име</label>
                                             <input type="text" name="firstname" id="firstname" value={formData.firstname} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="John" required />
                                         </div>
                                         {/* Last Name */}
                                         <div>
-                                            <label htmlFor="lastname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Last Name</label>
+                                            <label htmlFor="lastname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Фамилия</label>
                                             <input type="text" name="lastname" id="lastname" value={formData.lastname} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Doe" required />
                                         </div>
                                         {/* Company Name */}
                                         <div>
-                                            <label htmlFor="company" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Company Name</label>
+                                            <label htmlFor="company" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Фирма</label>
                                             <input type="text" name="company" id="company" value={formData.company} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Contoso Ltd." required />
                                         </div>
                                     </>
@@ -174,22 +174,22 @@ function Register() {
                                     <>
                                         {/* Email */}
                                         <div>
-                                            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
+                                            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Имейл</label>
                                             <input type="email" name="email" id="email" value={formData.email} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com" required />
                                         </div>
                                         {/* Password */}
                                         <div>
-                                            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                                            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Парола</label>
                                             <input type="password" name="password" id="password" value={formData.password} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
                                             {/* Password Requirements */}
                                             <div className="text-sm mt-2">
                                                 <p>Password must have:</p>
                                                 <ul>
-                                                    <li className={passwordLength ? 'text-green-500' : 'text-red-500'}>At least 12 characters</li>
-                                                    <li className={uppercase ? 'text-green-500' : 'text-red-500'}>An uppercase letter</li>
-                                                    <li className={lowercase ? 'text-green-500' : 'text-red-500'}>A lowercase letter</li>
-                                                    <li className={number ? 'text-green-500' : 'text-red-500'}>A number</li>
-                                                    <li className={symbol ? 'text-green-500' : 'text-red-500'}>A symbol (!@#$%^&* etc.)</li>
+                                                    <li className={passwordLength ? 'text-green-500' : 'text-red-500'}>Най-малко 12 символа</li>
+                                                    <li className={uppercase ? 'text-green-500' : 'text-red-500'}>Голяма буква</li>
+                                                    <li className={lowercase ? 'text-green-500' : 'text-red-500'}>Малка буква</li>
+                                                    <li className={number ? 'text-green-500' : 'text-red-500'}>Цифра</li>
+                                                    <li className={symbol ? 'text-green-500' : 'text-red-500'}>Символ (!@#$%^&* и др.)</li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -205,7 +205,7 @@ function Register() {
                                 {step === 1 ? (
                                     // Next button for the first step
                                     <button type="button" onClick={goToNextStep} className="btn w-full btn-primary">
-                                        Next
+                                        Напред
                                     </button>
                                 ) : (
                                     // Register button for the second step
@@ -216,7 +216,7 @@ function Register() {
 
                                 {/* Redirect to Login */}
                                 <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                                    Already have an account? <a href="/auth/login" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Login here</a>
+                                    Already have an account? <a href="/auth/login" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Вход</a>
                                 </p>
                             </form>
                         </div>
