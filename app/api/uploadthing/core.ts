@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import { verifyToken } from "@/server/auth";
 import { cookies } from "next/headers";
 import { createUploadthing, type FileRouter } from "uploadthing/next";

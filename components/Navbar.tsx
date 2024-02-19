@@ -1,8 +1,8 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import DashboardSvg from '@/public/images/icons/Dashboard'
 import InvoicesSvg from '@/public/images/icons/Invoices'
 import LogoutSvg from '@/public/images/icons/Logout'
-import SettingsSvg from '@/public/images/icons/Settings'
 import Link from 'next/link'
 import React, { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation'

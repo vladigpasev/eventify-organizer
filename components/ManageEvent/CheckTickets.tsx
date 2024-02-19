@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 'use client'
 import React, { useState, useEffect } from 'react';
 import { QrScanner } from '@yudiel/react-qr-scanner';

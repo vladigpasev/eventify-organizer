@@ -1,4 +1,4 @@
-//MyPlan.tsx:
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import React, { useState, useEffect } from "react";
 import Link from "next/link";

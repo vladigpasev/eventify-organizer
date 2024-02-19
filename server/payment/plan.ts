@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use server";
 import Stripe from 'stripe';
 import { z } from "zod";

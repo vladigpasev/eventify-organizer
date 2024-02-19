@@ -1,3 +1,5 @@
+//Copyright (C) 2024  Vladimir Pasev
+
 import { createNextRouteHandler } from "uploadthing/next";
 
 import { ourFileRouter } from "./core";

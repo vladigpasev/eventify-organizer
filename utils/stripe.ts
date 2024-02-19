@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import Stripe from 'stripe';
 
 if (!process.env.STRIPE_SECRET_KEY) {

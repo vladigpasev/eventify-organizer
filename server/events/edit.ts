@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 'use server';
 import { z } from 'zod';
 import { sql } from '@vercel/postgres';

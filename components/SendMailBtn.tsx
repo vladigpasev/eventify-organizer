@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import { sendEmail } from '@/server/auth';
 import React, { useState, useEffect } from 'react';

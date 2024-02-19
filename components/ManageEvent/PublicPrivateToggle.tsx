@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client";
 import React, { useState } from 'react';
 import { changeVisibility } from '@/server/events/edit';

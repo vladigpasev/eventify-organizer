@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import { pgTable, serial, varchar, text, uuid, boolean, timestamp, numeric } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {

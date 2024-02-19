@@ -1,5 +1,5 @@
+//Copyright (C) 2024  Vladimir Pasev
 import { cookies } from 'next/headers';
-import Link from 'next/link'
 import React from 'react'
 //@ts-ignore
 import jwt from 'jsonwebtoken';

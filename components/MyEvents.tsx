@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import EurSign from '@/public/images/icons/EurSign'
 import EventTimeSvg from '@/public/images/icons/EventTime'
 import GoSvg from '@/public/images/icons/GoSvg'

@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import MyEvents from '@/components/MyEvents'
 import React from 'react'
 

@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import { generateComponents } from "@uploadthing/react";
  
 import type { OurFileRouter } from "@/app/api/uploadthing/core";

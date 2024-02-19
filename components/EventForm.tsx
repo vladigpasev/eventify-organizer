@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import React, { useState, useRef } from 'react';
 import { LoadScript, Autocomplete } from '@react-google-maps/api';

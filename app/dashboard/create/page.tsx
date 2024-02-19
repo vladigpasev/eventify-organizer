@@ -1,4 +1,4 @@
-
+//Copyright (C) 2024  Vladimir Pasev
 import EventForm from '@/components/EventForm';
 import React from 'react';
 

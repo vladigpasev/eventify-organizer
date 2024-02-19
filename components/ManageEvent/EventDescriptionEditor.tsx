@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
 import { editDescription } from '@/server/events/edit';

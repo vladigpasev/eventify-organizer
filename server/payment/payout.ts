@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use server"
 
 import { cookies } from "next/headers";

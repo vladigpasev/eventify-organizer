@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import { handleLogout } from '@/server/auth'
 import React from 'react'

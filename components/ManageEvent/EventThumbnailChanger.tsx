@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
 import { editThumbnail } from '@/server/events/edit';

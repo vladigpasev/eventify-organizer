@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
 import { drizzle } from 'drizzle-orm/vercel-postgres';

@@ -1,3 +1,4 @@
+//Copyright (C) 2024  Vladimir Pasev
 import React from 'react';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
