@@ -7,7 +7,7 @@ import PayoutWarning from '@/components/PayoutWarning'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-    title: 'Eventify Organizer Dashboard',
+    title: 'Eventify Organizer',
     description: 'Wellcome to Eventify Organizer! Here you can create your own events, that can be seen from other users and the perfect target audience.',
 }
 

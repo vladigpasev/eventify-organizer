@@ -16,7 +16,6 @@ function TicketDeactivateBtn({ customerUuid }) {
     } catch (error) {
       console.error('Failed to deactivate ticket:', error);
       setIsLoading(false);
-      // Handle error state here
     }
   };
 

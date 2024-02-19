@@ -43,14 +43,12 @@ export async function create_checkout_session(prevState: any, formData: FormData
             });
             const token = cookies().get("token")?.value;
             const decoded = await jwt.verify(token, process.env.JWT_SECRET);
-            const userEmail = decoded.email_addr;
             const customerId = decoded.customerId;
             const session = await stripe.checkout.sessions.create({
                 billing_address_collection: 'auto',
                 line_items: [
                     {
                         price: prices.data[0].id,
-                        // For metered billing, do not pass quantity
                         quantity: 1,
                     },
                 ],
@@ -108,8 +106,6 @@ export async function create_checkout_session(prevState: any, formData: FormData
         await db.update(users)
             .set({
                 setpayment: true,
-                // Optionally, store the updated token in the database if needed
-                // token: updatedToken 
             })
             .where(eq(users.uuid, decodedToken.uuid));
 
@@ -160,8 +156,6 @@ export async function continueWithFreePlan() {
     await db.update(users)
         .set({
             setpayment: true,
-            // Optionally, store the updated token in the database if needed
-            // token: updatedToken 
         })
         .where(eq(users.uuid, decodedToken.uuid));
 
@@ -196,12 +190,10 @@ export async function getSubscriptionStatus() {
         });
 
         if (subscriptions.data.length > 0) {
-            // Пример: извличане на състоянието на първия абонамент
             const subscription = subscriptions.data[0];
             return {
                 status: subscription.status,
                 plan: subscription.items.data[0].price.lookup_key,
-                // Друга полезна информация може да бъде добавена тук
             };
         } else {
             console.log('No subscriptions found for this customer.');

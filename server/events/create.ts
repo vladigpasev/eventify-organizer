@@ -1,18 +1,12 @@
 'use server';
 import { z } from 'zod';
-//@ts-ignore
-import bcrypt from 'bcrypt';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { events, users } from '../../schema/schema';
-import { InferInsertModel } from 'drizzle-orm';
+import { events } from '../../schema/schema';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers'
-//@ts-ignore
-import nodemailer from 'nodemailer';
-import { redirect } from 'next/navigation';
 import { getSubscriptionStatus } from '../payment/plan';
 
 const db = drizzle(sql);
@@ -37,7 +31,6 @@ export async function createEvent(data: any) {
                 message: "DateTime must be a valid future date and time.",
             }
         ),
-        // No need to include userUuid here as it's obtained from the token
     });
     const token = cookies().get("token")?.value;
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);

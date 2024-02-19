@@ -4,13 +4,12 @@ import { checkAuthenticated, registerUser } from '@/server/auth';
 import { useRouter } from 'next/navigation';
 
 function Register() {
-    // State for the registration form
     useEffect(() => {
         const checkAuth = async () => {
             try {
                 const isAuthenticated = await checkAuthenticated();
                 if (isAuthenticated) {
-                    router.push('/dashboard'); // Redirect to dashboard or desired page if already logged in
+                    router.push('/dashboard'); // Redirect to dashboard if already logged in
                 }
             } catch (error) {
                 console.error('Authentication check failed:', error);
@@ -30,13 +29,12 @@ function Register() {
         confirmPassword: ''
     });
 
-    // State for password requirements
     const [passwordLength, setPasswordLength] = useState(false);
     const [uppercase, setUppercase] = useState(false);
     const [lowercase, setLowercase] = useState(false);
     const [number, setNumber] = useState(false);
     const [symbol, setSymbol] = useState(false);
-    const [loading, setLoading] = useState(false); // New state for loading indication
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
 
     const goToPreviousStep = () => {
@@ -112,16 +110,13 @@ function Register() {
             if (result.success) {
                 // If registration is successful
                 console.log('Registration successful', result.message);
-                // Redirect or perform additional actions upon successful registration
-                router.push('/auth/login'); // Redirect to login page (change this line based on your routing library if not using Next.js)
+                router.push('/auth/login'); // Redirect to login page
             } else {
                 // If registration failed, set the error message from the server if available
                 setError(result.message);
                 console.log('Registration failed', result.message);
             }
         } catch (error) {
-            // If there's an error during registration, handle it here
-            // You might want to set an error state to show the error message on your form
             setError('An unexpected error occurred. Please try again later.');
             console.error('Registration error:', error);
         } finally {
@@ -144,7 +139,7 @@ function Register() {
                             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
                                 {step === 1 ? "Create an organization account" : "Create an organization account"}
                             </h1>
-                            {error && <p className="text-error">{error}</p>} {/* Display error message here */}
+                            {error && <p className="text-error">{error}</p>} {/* Display error message */}
                             <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
                                 {step > 1 && (
                                     <button type="button" onClick={goToPreviousStep} className="flex items-center justify-center px-4 py-2 text-sm font-medium leading-5 text-gray-700 transition duration-150 ease-in-out bg-gray-100 border border-transparent rounded-lg hover:text-gray-500 focus:outline-none focus:shadow-outline-blue active:bg-gray-50 active:text-gray-800">

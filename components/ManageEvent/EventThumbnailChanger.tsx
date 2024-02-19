@@ -16,11 +16,9 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId }) => {
 
             if (response.success) {
                 alert("Thumbnail updated successfully!")
-                // Handle additional success response, e.g., show a success message
             }
-            // Handle other cases of the response, if necessary
         } catch (error) {
-            // Handle error, e.g., show an error message
+            console.log(error);
         }
     };
 

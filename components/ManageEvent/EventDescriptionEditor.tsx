@@ -44,13 +44,10 @@ const EventDescriptionEditor = ({ initialDescription, eventId }) => {
 
             if (response.success) {
                 setIsDescriptionChanged(false);
-                // Handle additional success response, e.g., show a success message
             } else {
                 setError("Failed to save title");
             }
-            // Handle other cases of the response, if necessary
         } catch (error) {
-            // Handle error, e.g., show an error message
             setError("Failed to save title");
         } finally {
             setIsLoading(false); // Stop loading regardless of the outcome

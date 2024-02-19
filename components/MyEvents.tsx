@@ -2,7 +2,6 @@ import EurSign from '@/public/images/icons/EurSign'
 import EventTimeSvg from '@/public/images/icons/EventTime'
 import GoSvg from '@/public/images/icons/GoSvg'
 import LocationSvg from '@/public/images/icons/Location'
-import Link from 'next/link'
 import React from 'react'
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';

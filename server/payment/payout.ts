@@ -5,8 +5,6 @@ import { cookies } from "next/headers";
 import jwt from "jsonwebtoken"
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { users } from "@/schema/schema";
-import { eq } from "drizzle-orm";
 import Stripe from 'stripe';
 import { redirect } from "next/navigation";
 

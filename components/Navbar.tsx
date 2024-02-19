@@ -96,17 +96,10 @@ function Navbar() {
                                 </div>
                             </div>
                             <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                                {/* <li>
-                                    <a className="justify-between">
-                                        Profile
-                                        <span className="badge">New</span>
-                                    </a>
-                                </li> */}
                                 <li><a onClick={toggleMyPlan}>My plan</a></li>
                                 <li><a><form method="POST" action={manageAccount}>
                                     <button type="submit">Billing settings</button>
                                 </form></a></li>
-                               { /*<li><a>Settings</a></li> */}
                                 <li><a><form action={handleLogout}><button type='submit'>Logout</button></form></a></li>
                             </ul>
                         </div>

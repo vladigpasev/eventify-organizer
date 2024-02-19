@@ -3,12 +3,10 @@ import { z } from 'zod';
 //@ts-ignore
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eventCustomers, events } from '../../../schema/schema';
+import { eventCustomers } from '../../../schema/schema';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
-//@ts-ignore
-import nodemailer from 'nodemailer';
 
 const db = drizzle(sql);
 
@@ -17,7 +15,6 @@ export async function checkTicket(data: any) {
     const ticketSchema = z.object({
         qrData: z.string().nonempty(),
         eventUuid: z.string().nonempty(),
-        // No need to include userUuid here as it's obtained from the token
     });
     const validatedData = ticketSchema.parse(data);
     try {
@@ -54,7 +51,6 @@ export async function markAsEntered(data: any) {
     const ticketSchema = z.object({
         ticketToken: z.string().nonempty(),
         eventUuid: z.string().nonempty(),
-        // No need to include userUuid here as it's obtained from the token
     });
     const validatedData = ticketSchema.parse(data);
     try {
@@ -79,7 +75,6 @@ export async function markAsExited(data: any) {
     const ticketSchema = z.object({
         ticketToken: z.string().nonempty(),
         eventUuid: z.string().nonempty(),
-        // No need to include userUuid here as it's obtained from the token
     });
     const validatedData = ticketSchema.parse(data);
     try {

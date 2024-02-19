@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 table {
-	border-collapse: collapse;
-	border-spacing: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
 :root {
@@ -26,14 +26,17 @@ body {
   background: #fff;
 }
 
-@media (min-width: 1024px) { /* This corresponds to the 'lg:' breakpoint */
+@media (min-width: 1024px) {
+
+  /* This corresponds to the 'lg:' breakpoint */
   .main-content {
-      padding-left: 307px; /* Adjust this value based on your sidebar's width */
+    padding-left: 307px;
   }
 }
 
-*{
-  -webkit-appearance: none; /* За Safari и Chrome */
-    -moz-appearance: none;    /* За Firefox */
-    /* Останалите стилове */
+* {
+  -webkit-appearance: none;
+  /* За Safari и Chrome */
+  -moz-appearance: none;
+  /* За Firefox */
 }

@@ -50,7 +50,7 @@ const EventDateTimeEditor = ({ initialDateTime, eventId }) => {
                     //@ts-ignore
                     value={dateTime}
                     onChange={handleDateTimeChange}
-                    min={minDateTime} // Add this line
+                    min={minDateTime}
                     className="focus:input focus:input-bordered w-full border-b-2"
                     placeholder="Date and Time"
                 />

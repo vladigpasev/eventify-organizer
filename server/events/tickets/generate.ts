@@ -20,11 +20,7 @@ export async function createManualTicket(data: any) {
         email: z.string().nonempty(),
         guestsCount: z.any(),
         eventUuid: z.string().nonempty(),
-        // No need to include userUuid here as it's obtained from the token
     });
-    // const token = cookies().get("token")?.value;
-    // const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    // const userUuid = decodedToken.uuid;
 
     try {
         const validatedData = ticketSchema.parse(data);
@@ -38,7 +34,7 @@ export async function createManualTicket(data: any) {
             eventUuid: validatedData.eventUuid,
         }).returning({ uuid: eventCustomers.uuid }).execute();
 
-        // Assuming the first element of the array is the inserted row
+        // The first element of the array is the inserted row
         const customerUuid = insertResult[0]?.uuid;
 
         // Generate a ticket token using the retrieved uuid

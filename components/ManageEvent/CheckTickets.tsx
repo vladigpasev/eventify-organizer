@@ -40,14 +40,12 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                 setScanResult(response); // Display the result
             } catch (error) {
                 console.error('Error processing QR code:', error);
-                // Handle error here
             }
         }
     };
     //@ts-ignore
     const handleError = (error) => {
         console.error('Error during QR Code scan:', error);
-        // Handle QR scanner error here
     };
 
     const handleMarkAsEntered = async () => {
@@ -59,10 +57,8 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
         try {
             await markAsEntered(data);
             setScanResult(null);
-            // Handle successful marking here, maybe show a confirmation message
         } catch (error) {
             console.error('Error marking ticket as entered:', error);
-            // Handle error here
         }
 
     };
@@ -76,7 +72,6 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                     setScanResult(response); // Display the result
                 } catch (error) {
                     console.error('Error processing ticket token:', error);
-                    // Handle error here
                 }
             }
             setIsLoading(false); // Set loading to false after processing
@@ -102,10 +97,8 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                 try {
                     await markAsExited(data);
                     setScanResult(null);
-                    // Handle successful marking here, maybe show a confirmation message
                 } catch (error) {
                     console.error('Error marking ticket as exited:', error);
-                    // Handle error here
                 }
             };
             return (
@@ -177,7 +170,6 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                         <QrScanner
                             onDecode={handleDecode}
                             onError={handleError}
-                        // You can add styles or other properties here
                         />
                         <button onClick={toggleModal} className="btn mt-4">Cancel Scan</button>
                     </>

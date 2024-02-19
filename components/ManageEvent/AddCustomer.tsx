@@ -39,7 +39,6 @@ function Modal({ toggleModal, eventId }) {
             toggleModal(); // Close modal on successful submission
         } catch (error) {
             console.error('Failed to create manual ticket:', error);
-            // Handle error state here
         } finally {
             setIsLoading(false); // Reset loading state whether submission is successful or fails
         }

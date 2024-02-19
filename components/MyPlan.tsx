@@ -7,10 +7,6 @@ import { useFormState } from 'react-dom';
 //@ts-ignore
 
 export default function MyPlan({ onClose }) {
-    const [formData, setFormData] = useState({
-        stripe_lookup_key: ''
-    });
-
     const initialState = {
         message: null,
         success: false,
@@ -39,7 +35,6 @@ export default function MyPlan({ onClose }) {
             description: "Perfect for event organizers with up to 20 events/month.",
             stripe_lookup_key: "basic_plan",
             label: "Subscribe to Basic",
-            //current: true,
             features: [
                 { text: "Everything included in Hobby", type: "included" },
                 { text: "Create up to 20 events per month", type: "included" },

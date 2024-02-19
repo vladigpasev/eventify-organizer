@@ -95,7 +95,6 @@ export async function registerUser(data: any) {
         if (errorObj.code === "23505" && errorObj.detail.includes("already exists")) {
             return { success: false, message: "The email already exists. Please use a different email." };
         } else {
-            // For all other errors, return a generic registration failed message.
             return { success: false, message: "Registration failed. Please try again or contact Eventify support." };
         }
     }
@@ -191,7 +190,7 @@ export async function sendEmail(email: any) {
     }
     const userQueryResult = await db.select({
         sentVerification: users.sentVerification,
-        lastEmailSentAt: users.lastEmailSentAt // assuming you have a lastEmailSentAt field
+        lastEmailSentAt: users.lastEmailSentAt
     })
         .from(users)
         .where(eq(users.email, email))
@@ -208,10 +207,6 @@ export async function sendEmail(email: any) {
         return;
     }
 
-    // if (isVerificationSent) {
-    //     return;
-    // }
-
     const verificationToken = generateVerificationToken(email);
 
     try {
@@ -220,8 +215,8 @@ export async function sendEmail(email: any) {
             port: process.env.EMAIL_SERVER_PORT,
             secure: false,
             auth: {
-                user: process.env.EMAIL_SERVER_USER, // your Office365 email
-                pass: process.env.EMAIL_SERVER_PASSWORD, // your Office365 password
+                user: process.env.EMAIL_SERVER_USER, 
+                pass: process.env.EMAIL_SERVER_PASSWORD,
             },
             tls: {
                 ciphers: 'SSLv3'
@@ -280,7 +275,6 @@ export async function handleLogout() {
 
 export async function checkAuthenticated() {
     const auth_token = cookies().get("token")?.value;
-    //console.log(auth_token);
     try {
         const decoded = await jwt.verify(auth_token, process.env.JWT_SECRET);
         return true;

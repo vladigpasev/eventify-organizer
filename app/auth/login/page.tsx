@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState } from 'react';
-import { checkAuthenticated, loginUser } from '@/server/auth'; // Modify the path as per your project structure
+import { checkAuthenticated, loginUser } from '@/server/auth';
 import { useRouter } from 'next/navigation';
 
 
@@ -10,7 +10,7 @@ function Login() {
             try {
                 const isAuthenticated = await checkAuthenticated();
                 if (isAuthenticated) {
-                    router.push('/dashboard'); // Redirect to dashboard or desired page if already logged in
+                    router.push('/dashboard'); // Redirect to dashboard if already logged in
                 }
             } catch (error) {
                 console.error('Authentication check failed:', error);
@@ -58,7 +58,7 @@ function Login() {
             const result = await loginUser({ email, password });
             if (result.success) {
                 console.log('Login successful', result.message);
-                router.push('/dashboard'); // Redirect to dashboard or desired page
+                router.push('/dashboard'); // Redirect to dashboard
             } else {
                 setError(result.message);
                 console.log('Login failed', result.message);

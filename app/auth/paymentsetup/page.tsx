@@ -34,14 +34,12 @@ export default function Pricing() {
             id: 1,
             title: "Hobby",
             price: 0,
-            description: "Perfect for event participators and hobby event creators.",
+            description: "Perfect for hobby event creators.",
             current: true,
             features: [
-                { text: "Participate in all events", type: "included" },
                 { text: "Create up to 5 events per month", type: "included" },
-                { text: "Event advertising as add-on", type: "partially-included" },
+                { text: "Event advertising as add-on (COMING SOON)", type: "partially-included" },
                 { text: "30% commission per event", type: "partially-included" },
-                { text: "Basic and Premium event features disabled", type: "not-included" }
             ],
         },
         {
@@ -53,9 +51,8 @@ export default function Pricing() {
             features: [
                 { text: "Everything included in Hobby", type: "included" },
                 { text: "Create up to 20 events per month", type: "included" },
-                { text: "Basic event features enabled", type: "included" },
-                { text: "Event advertising as add-on with 20% discount", type: "partially-included" },
-                { text: "10% commission per event", type: "partially-included" },
+                { text: "Event advertising as add-on with 20% discount (COMING SOON)", type: "partially-included" },
+                { text: "15% commission per event", type: "partially-included" },
             ],
         },
         {
@@ -67,9 +64,8 @@ export default function Pricing() {
             features: [
                 { text: "Everything included in Basic", type: "included" },
                 { text: "Create unlimited events per month", type: "included" },
-                { text: "Premium event features enabled", type: "included" },
-                { text: "All event advertising features are enabled", type: "included" },
-                { text: "3% commission per event", type: "partially-included" }
+                { text: "All event advertising features are enabled (COMING SOON)", type: "included" },
+                { text: "5% commission per event", type: "partially-included" }
             ],
         },
     ];
@@ -100,7 +96,7 @@ export default function Pricing() {
     return (
         <>
             {/* Start */}
-<img src="/logo.png" alt="Eventify Logo" className="w-60 p-5" />
+            <img src="/logo.png" alt="Eventify Logo" className="w-60 p-5" />
             <section className="py-10 px-6 lg:px-52" id="pricing">
                 <div >
                     <div className="grid grid-cols-1 pb-8 text-center">
@@ -188,9 +184,9 @@ export default function Pricing() {
                     </div>
                     <div className="flex justify-center text-slate-400 dark:text-slate-300 mt-2">
                         <form action={formAction2}>
-                        <button type="submit">Stay with Hobby plan</button>
+                            <button type="submit">Stay with Hobby plan</button>
                         </form>
-                        
+
                     </div>
                 </div>
             </section>
