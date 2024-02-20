@@ -64,6 +64,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
   })
     .from(eventCustomers)
     .where(eq(eventCustomers.eventUuid, params.uuid))
+    .orderBy(eventCustomers.firstname)
     .execute();
 
   if (currentEventDb.length > 0) {
