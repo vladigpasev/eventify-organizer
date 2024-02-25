@@ -10,8 +10,10 @@ import { eq } from 'drizzle-orm';
 import jwt from 'jsonwebtoken';
 //@ts-ignore
 import nodemailer from 'nodemailer';
+import puppeteer from 'puppeteer';
 
 const db = drizzle(sql);
+
 
 export async function createManualTicket(data: any) {
     // Define a schema for event data validation
@@ -79,6 +81,13 @@ export async function createManualTicket(data: any) {
             thumbnailUrl = eventData.thumbnailUrl;
         }
 
+        const browser = await puppeteer.launch();
+        const page = await browser.newPage();
+        await page.setContent('<h1>hi</h1>');
+        const pdfBuffer = await page.pdf({ format: 'A4' });
+        await browser.close();
+
+
 
         let transporter = nodemailer.createTransport({
             host: process.env.EMAIL_SERVER_HOST,
@@ -97,6 +106,12 @@ export async function createManualTicket(data: any) {
             from: '"Eventify" ' + process.env.EMAIL_FROM,
             to: email, // list of receivers
             subject: "Ticket Information", // Subject line
+            attachments: [
+                {
+                    filename: 'ticket.pdf',
+                    content: pdfBuffer,
+                },
+            ],  
             text: 'Hello, ' + customerName + '! This email is to inform you that you have just been signed up for the ' + eventName + ' event! You can see your ticket by clicking on the link. Link: ' + process.env.TICKETS_BASE_URL + '/' + ticketToken,
             html: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en"><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta name="x-apple-disable-message-reformatting"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta content="telephone=no" name="format-detection"><title>New Template 2</title> <!--[if (mso 16)]><style type="text/css">     a {text-decoration: none;}     </style><![endif]--> <!--[if gte mso 9]><style>sup { font-size: 100% !important; }</style><![endif]--> <!--[if gte mso 9]><xml> <o:OfficeDocumentSettings> <o:AllowPNG></o:AllowPNG> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettings> </xml>\
                 <![endif]--><style type="text/css">#outlook a { padding:0;}.es-button { mso-style-priority:100!important; text-decoration:none!important;}a[x-apple-data-detectors] { color:inherit!important; text-decoration:none!important; font-size:inherit!important; font-family:inherit!important; font-weight:inherit!important; line-height:inherit!important;}.es-desk-hidden { display:none; float:left; overflow:hidden; width:0; max-height:0; line-height:0; mso-hide:all;}@media only screen and (max-width:600px) {p, ul li, ol li, a { line-height:150%!important } h1, h2, h3, h1 a, h2 a, h3 a { line-height:120%!important } h1 { font-size:36px!important; text-align:left } h2 { font-size:26px!important; text-align:left } h3 { font-size:20px!important; text-align:left } .es-header-body h1 a, .es-content-body h1 a, .es-footer-body h1 a { font-size:36px!important; text-align:left }\
@@ -140,7 +155,7 @@ export async function createManualTicket(data: any) {
 
 }
 
-export async function deactivateManualTicket(customerUuid:any) {
+export async function deactivateManualTicket(customerUuid: any) {
     await db.delete(eventCustomers).where(eq(eventCustomers.uuid, customerUuid));
     return { success: true, message: 'Ticket deactivated successfully!' };
 }
