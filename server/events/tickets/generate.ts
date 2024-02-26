@@ -109,7 +109,7 @@ export async function createManualTicket(data: any) {
         });
 
         let info = await transporter.sendMail({
-            from: '"Eventify (about ' + eventName + ')" ' + process.env.EMAIL_FROM,
+            from: '"Eventify (' + eventName + ')" ' + process.env.EMAIL_FROM,
             to: email, // list of receivers
             subject: eventName + " - Ticket", // Subject line
             text: 'Hello, ' + customerName + '! This email is to inform you that you have just been signed up for the ' + eventName + ' event! You can see your ticket by clicking on the link. Link: ' + process.env.TICKETS_BASE_URL + '/' + ticketToken,
