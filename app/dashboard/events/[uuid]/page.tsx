@@ -96,7 +96,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
           <p className='text-gray-400 mb-5'>*Editing any significat information about your event may make your customers ask for refund! They will be notified about the changes and will have the opportunity do it. All tickets will be reissued!</p>
           <p className='text-gray-400 mb-5'>**Any price changes will apply to new customers only!</p>
         </div>
-        <div className="bg-white shadow rounded p-4">
+        <div className="bg-white shadow rounded p-4 text-black">
           <div className='flex justify-between items-center'>
             <h2 className="text-xl font-semibold mb-3">Tickets</h2>
             <div className='flex gap-2 sm:flex-row flex-col'>

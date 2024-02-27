@@ -46,7 +46,7 @@ const EventTitleEditor = ({ initialTitle, eventId }) => {
     return (
         <div>
             {error && <p className="text-red-500">{error}</p>} 
-            <h1 className="text-2xl font-bold mb-4">
+            <h1 className="text-2xl font-bold mb-4 text-black">
                 <input
                     type="text"
                     value={title}
