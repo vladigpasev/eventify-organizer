@@ -85,7 +85,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
       <EventTitleEditor initialTitle={currentEvent.eventName} eventId={params.uuid} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white shadow rounded p-4">
+        <div className="bg-white shadow rounded p-4 text-black">
           {/* Edit events fields in other client side rendered components */}
           <EventDescriptionEditor initialDescription={currentEvent.description} eventId={params.uuid} />
           <EventThumbnailChanger initialThumbnailUrl={currentEvent.thumbnailUrl} eventId={params.uuid} />
