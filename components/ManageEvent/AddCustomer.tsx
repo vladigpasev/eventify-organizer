@@ -3,13 +3,27 @@
 
 import React, { useState } from 'react';
 import { createManualTicket } from '@/server/events/tickets/generate';
+import { checkAuthenticated } from '@/server/auth';
+import { useRouter } from 'next/navigation';
+
 //@ts-ignore
 function AddCustomer({ eventId }) {
+    const router = useRouter();
+
     // State to control modal visibility
     const [isModalOpen, setModalOpen] = useState(false);
 
     // Function to toggle modal visibility
-    const toggleModal = () => setModalOpen(!isModalOpen);
+    const toggleModal = async () => {
+        const isAuthenticated = await checkAuthenticated(); // Check if the user is authenticated
+        if (isAuthenticated) {
+            setModalOpen(!isModalOpen); // If authenticated, toggle the modal
+        } else {
+            router.refresh(); // If not authenticated, reload the page
+            alert('Your session is expired. Please refresh the page to sign in again.')
+        }
+    };
+
 
     return (
         <div>
