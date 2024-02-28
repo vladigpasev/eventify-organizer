@@ -104,7 +104,12 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
               <CheckTicket eventId={params.uuid} />
             </div>
           </div>
-          
+          <div className="mb-4">
+            <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
+              {currentCustomerDb.length} Tickets
+            </span>
+          </div>
+
           {/* Customer list and management buttons */}
           <div className="overflow-x-auto">
             <table className="table">
