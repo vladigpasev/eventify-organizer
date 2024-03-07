@@ -288,6 +288,13 @@
       "when": 1708292981888,
       "tag": "0040_goofy_charles_xavier",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "5",
+      "when": 1709797540313,
+      "tag": "0041_slippery_magneto",
+      "breakpoints": true
     }
   ]
 }

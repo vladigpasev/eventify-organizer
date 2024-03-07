@@ -49,6 +49,7 @@ export const eventCustomers = pgTable('eventCustomers', {
   ticketToken: varchar('ticketToken', {length: 255}), // New field for the ticket token
   isEntered: boolean('isEntered').default(false),
   clerkUserId: varchar('clerkUserId', { length: 100 }),
+  hidden: boolean('hidden').default(false),
 });
 
 export const comments = pgTable('comments', {

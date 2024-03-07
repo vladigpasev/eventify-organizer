@@ -2,10 +2,6 @@
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { sql } from '@vercel/postgres';
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-
-const db = drizzle(sql);
 
 // Converts URL-safe base64 to regular base64
 function urlSafeBase64Decode(base64String: string) {
