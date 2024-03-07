@@ -2,7 +2,7 @@
 import React from 'react';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eq } from 'drizzle-orm';
+import { eq, and } from "drizzle-orm";
 import { eventCustomers, events } from '../../../../schema/schema';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
@@ -63,7 +63,10 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     ticketToken: eventCustomers.ticketToken,
   })
     .from(eventCustomers)
-    .where(eq(eventCustomers.eventUuid, params.uuid))
+    .where(and(
+      eq(eventCustomers.eventUuid, params.uuid),
+      eq(eventCustomers.hidden, false)
+    ))
     .orderBy(eventCustomers.firstname)
     .execute();
 
