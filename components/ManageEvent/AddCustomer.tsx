@@ -7,7 +7,7 @@ import { checkAuthenticated } from '@/server/auth';
 import { useRouter } from 'next/navigation';
 
 //@ts-ignore
-function AddCustomer({ eventId }) {
+function AddCustomer({ eventId, onCustomerAdded }) {
     const router = useRouter();
 
     // State to control modal visibility
@@ -28,13 +28,14 @@ function AddCustomer({ eventId }) {
     return (
         <div>
             <div onClick={toggleModal} className='text-gray-600 flex flex-row justify-center items-center btn'><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={20} fill='currentColor'><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z" fill='currentColor' /></svg><div> Add ticket</div></div>
-            {isModalOpen && <Modal toggleModal={toggleModal} eventId={eventId} />}
+            {isModalOpen && <Modal toggleModal={toggleModal} eventId={eventId} onCustomerAdded={onCustomerAdded} />}
         </div>
     );
 }
 //@ts-ignore
-function Modal({ toggleModal, eventId }) {
+function Modal({ toggleModal, eventId, onCustomerAdded }) {
     const [isLoading, setIsLoading] = useState(false);
+    const router = useRouter();
     //@ts-ignore
     const handleSubmit = async (event) => {
         event.preventDefault(); // Prevent default form submission
@@ -50,8 +51,15 @@ function Modal({ toggleModal, eventId }) {
 
         // Call the createManualTicket server action with formData
         try {
+            const isAuthenticated = await checkAuthenticated(); // Check if the user is authenticated
+            if (!isAuthenticated) {
+                alert('Your session is expired. Please refresh the page to sign in again.');
+                router.refresh;
+                throw "Your session is expired. Please refresh the page to sign in again.";
+            }
             await createManualTicket(formData);
             toggleModal(); // Close modal on successful submission
+            onCustomerAdded();
         } catch (error) {
             console.error('Failed to create manual ticket:', error);
         } finally {

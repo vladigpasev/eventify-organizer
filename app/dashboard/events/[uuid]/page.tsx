@@ -3,7 +3,7 @@ import React from 'react';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { eq, and } from "drizzle-orm";
-import { eventCustomers, events } from '../../../../schema/schema';
+import { events } from '../../../../schema/schema';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers'
@@ -14,13 +14,10 @@ import EventThumbnailChanger from '@/components/ManageEvent/EventThumbnailChange
 import EventDateTimeEditor from '@/components/ManageEvent/EventDateTimeEditor';
 import LocationChanger from '@/components/ManageEvent/LocationChanger';
 import EventPriceEditor from '@/components/ManageEvent/PriceEdit';
-import AddCustomer from '@/components/ManageEvent/AddCustomer';
-import Link from 'next/link';
-import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
-import CheckTicket from '@/components/ManageEvent/CheckTickets';
-import TicketActionsBtn from '@/components/ManageEvent/TicketActionsBtn';
 import PublicPrivateToggle from '@/components/ManageEvent/PublicPrivateToggle';
 import DeleteEvent from '@/components/ManageEvent/DeleteEvent';
+import UserTable from '../../../../components/ManageEvent/UsersTable';
+
 
 const db = drizzle(sql);
 
@@ -54,22 +51,6 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     .where(eq(events.uuid, params.uuid))
     .execute();
 
-  const currentCustomerDb = await db.select({
-    uuid: eventCustomers.uuid,
-    firstname: eventCustomers.firstname,
-    lastname: eventCustomers.lastname,
-    email: eventCustomers.email,
-    guestCount: eventCustomers.guestCount,
-    ticketToken: eventCustomers.ticketToken,
-  })
-    .from(eventCustomers)
-    .where(and(
-      eq(eventCustomers.eventUuid, params.uuid),
-      eq(eventCustomers.hidden, false)
-    ))
-    .orderBy(eventCustomers.firstname)
-    .execute();
-
   if (currentEventDb.length > 0) {
     // There are results
   } else {
@@ -99,62 +80,7 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
           <p className='text-gray-400 mb-5'>*Editing any significat information about your event may make your customers ask for refund! They will be notified about the changes and will have the opportunity do it. All tickets will be reissued!</p>
           <p className='text-gray-400 mb-5'>**Any price changes will apply to new customers only!</p>
         </div>
-        <div className="bg-white shadow rounded p-4 text-black">
-          <div className='flex justify-between items-center'>
-            <h2 className="text-xl font-semibold mb-3">Tickets</h2>
-            <div className='flex gap-2 sm:flex-row flex-col'>
-              <AddCustomer eventId={params.uuid} />
-              <CheckTicket eventId={params.uuid} />
-            </div>
-          </div>
-          <div className="mb-4">
-            <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
-              {currentCustomerDb.length} Tickets
-            </span>
-          </div>
-
-          {/* Customer list and management buttons */}
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>
-                  </th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Guests</th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentCustomerDb.map((customer, index) => (
-                  <tr key={index}>
-                    <th></th>
-                    <td>
-                      <div className="flex items-center ">
-                        <div className="avatar"></div>
-                        <div>
-                          <div className="font-bold">{`${customer.firstname} ${customer.lastname}`}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{customer.email}</td>
-                    <td>{customer.guestCount}</td>
-                    <th>
-                      <Link className="btn btn-ghost btn-xs text-black" href={process.env.TICKETS_BASE_URL + `/` + customer.ticketToken} target='_blank'><svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor' /></svg></Link>
-                    </th>
-                    <th><TicketActionsBtn ticketToken={customer.ticketToken} eventId={params.uuid} /></th>
-                    <th>
-                      <TicketDeactivateBtn customerUuid={customer.uuid} />
-                    </th>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <UserTable eventId={params.uuid} />
       </div>
       <div className="bg-white shadow rounded p-4 mt-4">
         <h2 className="text-xl font-semibold mb-3">Advertisement Options</h2>
