@@ -6,6 +6,9 @@ import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
 import { getUsers } from '@/server/events/getUsers';
 import AddCustomer from './AddCustomer';
 import CheckTicket from './CheckTickets';
+import SendEmailToAll from './SendEmailToAll';
+
+export const maxDuration = 300;
 
 interface UserTableProps {
     eventId: string;
@@ -63,7 +66,6 @@ const UserTable = ({ eventId }: UserTableProps) => {
 
     return (
         <div className="bg-white shadow rounded p-4 text-black">
-
             <div className='flex justify-between items-center'>
                 <h2 className="text-xl font-semibold mb-3">Tickets</h2>
                 <div className='flex gap-2 sm:flex-row flex-col'>
@@ -73,6 +75,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
             </div>
             {isLoading ? <>Loading...</> :
                 <>
+                <div><SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers}/></div>
                     <div className="mb-4">
                         <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
                             {users.length} Tickets

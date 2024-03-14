@@ -18,6 +18,7 @@ import PublicPrivateToggle from '@/components/ManageEvent/PublicPrivateToggle';
 import DeleteEvent from '@/components/ManageEvent/DeleteEvent';
 import UserTable from '../../../../components/ManageEvent/UsersTable';
 
+export const maxDuration = 300;
 
 const db = drizzle(sql);
 

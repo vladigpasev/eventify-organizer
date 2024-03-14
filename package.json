@@ -27,6 +27,7 @@
     "react-datepicker": "^4.25.0",
     "react-dom": "^18",
     "react-qr-scanner": "^1.0.0-alpha.11",
+    "react-quill": "^2.0.0",
     "stripe": "^14.14.0",
     "uploadthing": "^6.2.0",
     "zod": "^3.22.4"
