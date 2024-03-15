@@ -7,6 +7,8 @@ import dynamic from 'next/dynamic';
 
 export const maxDuration = 300;
 
+const BATCH_SIZE = 100;
+
 const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 import 'react-quill/dist/quill.snow.css';
 import { sendMailToAllCustomers } from '@/server/events/tickets/sendMailToAll';
@@ -43,32 +45,38 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
     };
     //@ts-ignore
     const handleSubmit = async (event) => {
-        event.preventDefault(); // Prevent default form submission
-        setIsLoading(true); // Set loading state to true when submission starts
-
+        event.preventDefault();
+        setIsLoading(true);
+    
         const formData = {
             subject: event.target.subject.value,
             emailText: emailText,
             eventId: eventId,
         };
-
-        console.log(formData);
-
-        // Call the createManualTicket server action with formData
+    
         try {
-            const isAuthenticated = await checkAuthenticated(); // Check if the user is authenticated
+            const isAuthenticated = await checkAuthenticated();
             if (!isAuthenticated) {
                 alert('Your session is expired. Please refresh the page to sign in again.');
-                router.refresh;
-                throw "Your session is expired. Please refresh the page to sign in again.";
+                router.refresh();
+                return;
             }
-            await sendMailToAllCustomers(formData);
-            toggleModal(); // Close modal on successful submission
+    
+            let start = 0;
+            let hasMore = true;
+    
+            while (hasMore) {
+                const response = await sendMailToAllCustomers(formData, start, BATCH_SIZE);
+                hasMore = response.hasMore;
+                start += BATCH_SIZE;
+            }
+    
+            toggleModal(); // Close modal after all batches are sent
             onCustomerAdded();
         } catch (error) {
-            console.error('Failed to create manual ticket:', error);
+            console.error('Error during email sending:', error);
         } finally {
-            setIsLoading(false); // Reset loading state whether submission is successful or fails
+            setIsLoading(false);
         }
     };
 

@@ -14,7 +14,7 @@ import { cookies } from 'next/headers';
 
 const db = drizzle(sql);
 
-export async function sendMailToAllCustomers(data: any) {
+export async function sendMailToAllCustomers(data: any, start: number, batchSize: number) {
     // Define a schema for event data validation
     const emailSchema = z.object({
         subject: z.string().nonempty(),
@@ -52,6 +52,8 @@ export async function sendMailToAllCustomers(data: any) {
             throw "Unauthorized";
         }
 
+        const batchCustomers = customersForEvent.slice(start, start + batchSize);
+
 
         //const email = validatedData.email;
         // const customerName = (validatedData.firstname + ' ' + validatedData.lastname);
@@ -71,7 +73,7 @@ export async function sendMailToAllCustomers(data: any) {
             }
         });
 
-        for (const customer of customersForEvent) {
+        for (const customer of batchCustomers) {
             let info = await transporter.sendMail({
                 from: `"${eventData.eventName} (via Eventify)" <${process.env.EMAIL_FROM}>`,
                 to: customer.email,
@@ -103,7 +105,10 @@ export async function sendMailToAllCustomers(data: any) {
             console.log("Message sent to %s: %s", customer.email, info.messageId);
         }
 
-        return { success: true, message: 'Emails sent successfully' };
+        const hasMore = start + batchSize < customersForEvent.length;
+        console.log("Is there more", hasMore)
+        return { success: true, message: 'Batch processed', hasMore: hasMore };
+
 
     } catch (error) {
         console.error('Error:', error + "bbb" + data);
