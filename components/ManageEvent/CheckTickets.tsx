@@ -1,15 +1,26 @@
 //Copyright (C) 2024  Vladimir Pasev
-'use client'
+"use client"
+
 import React, { useState, useEffect } from 'react';
 import { QrScanner } from '@yudiel/react-qr-scanner';
 import { checkTicket, markAsEntered, markAsExited } from '@/server/events/tickets/check';
+import { checkAuthenticated } from '@/server/auth';
+import { useRouter } from 'next/navigation';
 
 //@ts-ignore
-function CheckTicket({ eventId }) {
+function CheckTicket({ eventId, onEnteredOrExited }) {
     const [isModalOpen, setModalOpen] = useState(false);
     const [scanResult, setScanResult] = useState(null);
-
-    const toggleModal = () => setModalOpen(!isModalOpen);
+    const router = useRouter();
+    const toggleModal = async () => {
+        const isAuthenticated = await checkAuthenticated(); // Check if the user is authenticated
+        if (isAuthenticated) {
+            setModalOpen(!isModalOpen); // If authenticated, toggle the modal
+        } else {
+            router.refresh(); // If not authenticated, reload the page
+            alert('Your session is expired. Please refresh the page to sign in again.')
+        }
+    };
 
     return (
         <div>
@@ -22,6 +33,7 @@ function CheckTicket({ eventId }) {
                     scanResult={scanResult}
                     setScanResult={setScanResult}
                     ticketTokenProp={null}
+                    onEnteredOrExited={onEnteredOrExited}
                 />
             )}
         </div>
@@ -29,7 +41,7 @@ function CheckTicket({ eventId }) {
 }
 
 //@ts-ignore
-export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketTokenProp }) {
+export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketTokenProp, onEnteredOrExited }) {
     const [ticketToken, setTicketToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     //@ts-ignore
@@ -58,6 +70,7 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
         try {
             await markAsEntered(data);
             setScanResult(null);
+            onEnteredOrExited();
         } catch (error) {
             console.error('Error marking ticket as entered:', error);
         }
@@ -81,10 +94,6 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
         checkTicketWithToken();
     }, [ticketTokenProp, eventId, setScanResult]);
 
-
-
-
-
     const ResultScreen = () => {
         if (scanResult?.success) {
             const { currentCustomer } = scanResult;
@@ -98,6 +107,7 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                 try {
                     await markAsExited(data);
                     setScanResult(null);
+                    onEnteredOrExited();
                 } catch (error) {
                     console.error('Error marking ticket as exited:', error);
                 }

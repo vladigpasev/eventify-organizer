@@ -21,7 +21,7 @@ function SendEmailToAll({ eventId, onCustomerAdded }) {
 
     return (
         <div>
-            <button onClick={toggleModal} className='btn mb-5 mt-5'>Send Email To All Customers</button>
+            <button onClick={toggleModal} className='btn btn-wide mb-5 mt-5'>Send Email</button>
 
             {isModalOpen && (
                 <Modal

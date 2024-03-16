@@ -16,8 +16,8 @@ interface Customer {
     email: string;
     guestCount: number;
     ticketToken: string;
+    isEntered: boolean;
 }
-
 
 export async function getUsers(eventUuid: string): Promise<Customer[]> {
 
@@ -52,6 +52,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         email: eventCustomers.email,
         guestCount: eventCustomers.guestCount,
         ticketToken: eventCustomers.ticketToken,
+        isEntered: eventCustomers.isEntered,
     })
         .from(eventCustomers)
         .where(and(

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Modal } from './CheckTickets';
 
 //@ts-ignore
-function TicketActionsBtn({ eventId, ticketToken }) {
+function TicketActionsBtn({ eventId, ticketToken, onEnteredOrExited }) {
     const [isModalOpen, setModalOpen] = useState(false);
     const [scanResult, setScanResult] = useState(null);
 
@@ -21,6 +21,7 @@ function TicketActionsBtn({ eventId, ticketToken }) {
                     scanResult={scanResult}
                     setScanResult={setScanResult}
                     ticketTokenProp={ticketToken}
+                    onEnteredOrExited={onEnteredOrExited}
                 />
             )}
         </div>

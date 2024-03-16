@@ -21,6 +21,7 @@ interface Customer {
     email: string;
     guestCount: number;
     ticketToken: string;
+    isEntered: boolean;
 }
 
 const UserTable = ({ eventId }: UserTableProps) => {
@@ -30,6 +31,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<Error | null>(null);
 
+    const enteredCount = users.filter(user => user.isEntered).length;
 
     const fetchUsers = async () => {
         try {
@@ -56,11 +58,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
         });
         setFilteredUsers(filtered);
     }, [searchTerm, users]);
-
-
-
-
-
+    
     //if (isLoading) return <p>Loading...</p>;
     if (error) return <p>Error loading users: {error.message}</p>;
 
@@ -70,16 +68,20 @@ const UserTable = ({ eventId }: UserTableProps) => {
                 <h2 className="text-xl font-semibold mb-3">Tickets</h2>
                 <div className='flex gap-2 sm:flex-row flex-col'>
                     <AddCustomer eventId={eventId} onCustomerAdded={fetchUsers} />
-                    <CheckTicket eventId={eventId} />
+                    <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers}/>
                 </div>
             </div>
             {isLoading ? <>Loading...</> :
                 <>
-                <div><SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers}/></div>
+                    <div><SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} /></div>
                     <div className="mb-4">
                         <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
                             {users.length} Tickets
                         </span>
+                        <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-800">
+                            {enteredCount} IN
+                        </span>
+
                     </div>
                     <div className="mb-4">
                         <input
@@ -114,7 +116,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
                                             <div className="flex items-center ">
                                                 <div className="avatar"></div>
                                                 <div>
-                                                    <div className="font-bold">{`${customer.firstname} ${customer.lastname}`}</div>
+                                                    <div className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}>{`${customer.firstname} ${customer.lastname}`}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -123,7 +125,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
                                         <th>
                                             <Link className="btn btn-ghost btn-xs text-black" href={`https://tickets.eventify.bg/` + customer.ticketToken} target='_blank'><svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor' /></svg></Link>
                                         </th>
-                                        <th><TicketActionsBtn ticketToken={customer.ticketToken} eventId={eventId} /></th>
+                                        <th><TicketActionsBtn ticketToken={customer.ticketToken} eventId={eventId} onEnteredOrExited={fetchUsers} /></th>
                                         <th>
                                             <TicketDeactivateBtn customerUuid={customer.uuid} />
                                         </th>
