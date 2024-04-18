@@ -138,6 +138,7 @@ export async function editLocation(data: any) {
         await db.update(events)
             .set({
                 location: validatedData.location,
+                //@ts-ignore
                 eventCoordinates: coordinates,
             })
             .where(eq(events.uuid, validatedData.uuid));

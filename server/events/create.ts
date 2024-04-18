@@ -14,7 +14,7 @@ const db = drizzle(sql);
 
 const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-async function geocodeLocation(address:any) {
+async function geocodeLocation(address: any) {
     const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`;
 
     try {
@@ -117,7 +117,7 @@ export async function createEvent(data: any) {
             userUuid: userUuid,
             eventCoordinates: coordinates,
         };
-
+        //@ts-ignore
         const result = await db.insert(events).values(eventData).execute();
         return { success: true, message: 'Event created successfully' };
     } catch (error) {
