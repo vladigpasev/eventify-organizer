@@ -7,6 +7,28 @@ import { eventCustomers, events } from '../../schema/schema';
 import { eq } from 'drizzle-orm';
 
 const db = drizzle(sql);
+const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+async function geocodeLocation(address:any) {
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`;
+
+    try {
+        const response = await fetch(geocodeUrl);
+        const data = await response.json();
+        //@ts-ignore
+        if (data.results && data.results.length > 0) {
+            //@ts-ignore
+            const { lat, lng } = data.results[0].geometry.location;
+            //console.log("Geocoding result for", address, ":", { lat, lng });
+            return { lat, lng };
+        } else {
+            console.error('No results found for location:', address);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in geocoding:', error);
+        return null;
+    }
+}
 
 export async function editTitle(data: any) {
     const titleSchema = z.object({
@@ -112,10 +134,11 @@ export async function editLocation(data: any) {
     });
     try {
         const validatedData = locationSchema.parse(data);
-
+        const coordinates = await geocodeLocation(validatedData.location);
         await db.update(events)
             .set({
                 location: validatedData.location,
+                eventCoordinates: coordinates,
             })
             .where(eq(events.uuid, validatedData.uuid));
         console.log(validatedData.location);

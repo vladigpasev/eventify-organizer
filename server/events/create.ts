@@ -12,6 +12,30 @@ import { getSubscriptionStatus } from '../payment/plan';
 
 const db = drizzle(sql);
 
+const googleMapsApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+async function geocodeLocation(address:any) {
+    const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${googleMapsApiKey}`;
+
+    try {
+        const response = await fetch(geocodeUrl);
+        const data = await response.json();
+        //@ts-ignore
+        if (data.results && data.results.length > 0) {
+            //@ts-ignore
+            const { lat, lng } = data.results[0].geometry.location;
+            //console.log("Geocoding result for", address, ":", { lat, lng });
+            return { lat, lng };
+        } else {
+            console.error('No results found for location:', address);
+            return null;
+        }
+    } catch (error) {
+        console.error('Error in geocoding:', error);
+        return null;
+    }
+}
+
 export async function createEvent(data: any) {
     // Define a schema for event data validation
     const eventSchema = z.object({
@@ -86,11 +110,12 @@ export async function createEvent(data: any) {
 
     try {
         const validatedData = eventSchema.parse(data);
-
+        const coordinates = await geocodeLocation(validatedData.location);
         // Combine validated data with userUuid
         const eventData = {
             ...validatedData,
-            userUuid: userUuid
+            userUuid: userUuid,
+            eventCoordinates: coordinates,
         };
 
         const result = await db.insert(events).values(eventData).execute();

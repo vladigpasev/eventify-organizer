@@ -295,6 +295,20 @@
       "when": 1709797540313,
       "tag": "0041_slippery_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "5",
+      "when": 1713421662210,
+      "tag": "0042_giant_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "5",
+      "when": 1713421739498,
+      "tag": "0043_past_steel_serpent",
+      "breakpoints": true
     }
   ]
 }
