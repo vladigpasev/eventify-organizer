@@ -79,7 +79,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
                             {users.length} Билети
                         </span>
                         <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-800">
-                            {enteredCount} влязли
+                            {enteredCount} влeзли
                         </span>
 
                     </div>
