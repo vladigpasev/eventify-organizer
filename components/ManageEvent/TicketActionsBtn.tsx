@@ -13,7 +13,7 @@ function TicketActionsBtn({ eventId, ticketToken, onEnteredOrExited }) {
     return (
         <div>
             
-            <button onClick={toggleModal} className="btn btn-ghost btn-xs bg-blue-500 text-white">actions</button>
+            <button onClick={toggleModal} className="btn btn-ghost btn-xs bg-blue-500 text-white">Действия</button>
             {isModalOpen && (
                 <Modal
                     toggleModal={toggleModal}

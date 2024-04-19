@@ -18,13 +18,13 @@ function CheckTicket({ eventId, onEnteredOrExited }) {
             setModalOpen(!isModalOpen); // If authenticated, toggle the modal
         } else {
             router.refresh(); // If not authenticated, reload the page
-            alert('Your session is expired. Please refresh the page to sign in again.')
+            alert('Сесията ви е изтекла. Моля, опреснете страницата, за да влезете отново.')
         }
     };
 
     return (
         <div>
-            <button onClick={toggleModal} className='btn'><svg width={34} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5.75 13.75v4.5h4.5v-4.5h-4.5Z"></path><path fill="currentColor" d="M17 17h2v2h-2Z"></path><path fill="currentColor" d="M13 13h2v2h-2Z"></path><path fill="currentColor" d="M15 15h2v2h-2Z"></path><path fill="currentColor" d="M13 17h2v2h-2Z"></path><path fill="none" stroke="currentColor" stroke-width="1.5" d="M18.25 5.75v4.5h-4.5v-4.5h4.5Z"></path><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5.75 5.75v4.5h4.5v-4.5h-4.5Z"></path></svg>Scan Ticket </button>
+            <button onClick={toggleModal} className='btn'><svg width={34} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5.75 13.75v4.5h4.5v-4.5h-4.5Z"></path><path fill="currentColor" d="M17 17h2v2h-2Z"></path><path fill="currentColor" d="M13 13h2v2h-2Z"></path><path fill="currentColor" d="M15 15h2v2h-2Z"></path><path fill="currentColor" d="M13 17h2v2h-2Z"></path><path fill="none" stroke="currentColor" stroke-width="1.5" d="M18.25 5.75v4.5h-4.5v-4.5h4.5Z"></path><path fill="none" stroke="currentColor" stroke-width="1.5" d="M5.75 5.75v4.5h4.5v-4.5h-4.5Z"></path></svg>Проверка на билети </button>
 
             {isModalOpen && (
                 <Modal
@@ -118,12 +118,12 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                         <div>
                             <div className="text-yellow-500">
                                 <svg className="mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} width={50} height={50}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
-                                <p className="text-xl font-bold">User is Already in the Event</p>
+                                <p className="text-xl font-bold">Потребителят е вече в събитието</p>
                             </div>
                             <UserInfo currentCustomer={currentCustomer} />
                             <div className='flex'>
                                 <button onClick={handleExit} className="btn bg-yellow-500 text-white mt-4 w-full">
-                                    Mark as Exited
+                                    Отбележи като напуснал
                                 </button>
                             </div>
                         </div>
@@ -131,22 +131,22 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                         <div>
                             <div className="text-green-500">
                                 <svg className="mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} width={50} height={50}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                                <p className="text-xl font-bold">Ticket is Valid</p>
+                                <p className="text-xl font-bold">Билетът е валиден</p>
                             </div>
                             <UserInfo currentCustomer={currentCustomer} />
                             <div className='flex'>
                                 <button onClick={handleMarkAsEntered} className="btn bg-green-500 text-white mt-4 w-full">
-                                    Mark as Entered
+                                    Отбележи като влязъл
                                 </button>
                             </div>
                         </div>
                     )}
                     <div className='flex flex-col justify-center gap-5'>
                         <button onClick={() => { setScanResult(null); }} className="btn btn-secondary mt-4">
-                            Scan Another One
+                            Сканирай друг
                         </button>
                         <button onClick={() => { setScanResult(null); toggleModal(); }} className="link mt-4">
-                            Close
+                            Затвори
                         </button>
                     </div>
                 </div>
@@ -156,14 +156,14 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                 <div className="text-center p-4">
                     <div className="text-red-500">
                         <svg className="mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} width={50} height={50}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                        <p className="text-xl font-bold">Ticket is Not Valid</p>
+                        <p className="text-xl font-bold">Билетът не е валиден</p>
                     </div>
                     <div className='flex flex-col justify-center gap-5'>
                         <button onClick={() => { setScanResult(null) }} className="btn bg-red-500 text-white mt-4">
-                            Scan Another One
+                            Сканирай друг
                         </button>
                         <button onClick={() => { setScanResult(null); toggleModal(); }} className="link mt-4">
-                            Close
+                            Затвори
                         </button>
                     </div>
                 </div>
@@ -175,14 +175,14 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center px-4 z-50">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full">
                 {isLoading ? (
-                    <div>Loading...</div> // Show loading indicator
+                    <div>Зареждане...</div> // Show loading indicator
                 ) : !scanResult ? (
                     <>
                         <QrScanner
                             onDecode={handleDecode}
                             onError={handleError}
                         />
-                        <button onClick={toggleModal} className="btn mt-4">Cancel Scan</button>
+                        <button onClick={toggleModal} className="btn mt-4">Откажи сканиране</button>
                     </>
                 ) : <ResultScreen />}
             </div>
@@ -193,9 +193,9 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
 //@ts-ignore 
 const UserInfo = ({ currentCustomer }) => (
     <div className="mt-4 text-left">
-        <p><strong>Name:</strong> {currentCustomer.firstName} {currentCustomer.lastName}</p>
-        <p><strong>Email:</strong> {currentCustomer.email}</p>
-        <p><strong>Guest Count:</strong> {currentCustomer.guestCount}</p>
+        <p><strong>Име:</strong> {currentCustomer.firstName} {currentCustomer.lastName}</p>
+        <p><strong>Имейл:</strong> {currentCustomer.email}</p>
+        <p><strong>Брой гости:</strong> {currentCustomer.guestCount}</p>
     </div>
 );
 

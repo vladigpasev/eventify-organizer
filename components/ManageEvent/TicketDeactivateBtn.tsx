@@ -27,7 +27,7 @@ function TicketDeactivateBtn({ customerUuid }) {
         onClick={!isDeactivated && !isLoading ? deactivateTicket : undefined}
         disabled={isLoading || isDeactivated}
       >
-        {isLoading ? 'Loading...' : isDeactivated ? 'Deactivated' : 'Deactivate'}
+        {isLoading ? 'Деактивиране...' : isDeactivated ? 'Деактивиран' : 'Деактивирай'}
       </button>
     </div>
   );

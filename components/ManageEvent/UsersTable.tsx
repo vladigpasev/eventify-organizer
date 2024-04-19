@@ -100,9 +100,9 @@ const UserTable = ({ eventId }: UserTableProps) => {
                                 <tr>
                                     <th>
                                     </th>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Guests</th>
+                                    <th>Име</th>
+                                    <th>Имейл</th>
+                                    <th>Брой гости</th>
                                     <th></th>
                                     <th></th>
                                     <th></th>
