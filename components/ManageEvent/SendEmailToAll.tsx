@@ -21,7 +21,7 @@ function SendEmailToAll({ eventId, onCustomerAdded }) {
 
     return (
         <div>
-            <button onClick={toggleModal} className='btn btn-wide mb-5 mt-5'>Send Email</button>
+            <button onClick={toggleModal} className='btn btn-wide mb-5 mt-5'>Изпрати имейл</button>
 
             {isModalOpen && (
                 <Modal
@@ -57,7 +57,7 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
         try {
             const isAuthenticated = await checkAuthenticated();
             if (!isAuthenticated) {
-                alert('Your session is expired. Please refresh the page to sign in again.');
+                alert('Сесията ви е изтекла. Моля, опреснете страницата, за да влезете отново.');
                 router.refresh();
                 return;
             }
@@ -83,10 +83,10 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center px-4 z-50">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full">
-                <h2 className="text-xl mb-4 font-bold">Send Email To All Customers</h2>
+                <h2 className="text-xl mb-4 font-bold">Изпрати имейл до всички гости</h2>
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <div className='pb-5'>
-                        <label htmlFor="subject" className='text-gray-500 font-semibold'>Subject:</label>
+                        <label htmlFor="subject" className='text-gray-500 font-semibold'>Тема:</label>
                         <input
                             id='subject'
                             type="text"
@@ -95,7 +95,7 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
                             required
                         />
                     </div>
-                    <label htmlFor="emailText" className='text-gray-500 font-semibold'>Email Text:</label>
+                    <label htmlFor="emailText" className='text-gray-500 font-semibold'>Текст на имейла:</label>
                     <div className='text-[16pt]'>Здравей, (Име Фамилия),</div>
                     <ReactQuill
                             theme="snow"
@@ -105,21 +105,21 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
                             className='text-black'
                             id='emailText'
                         />
-                    <p className='text-gray-400'>*Sending an email to so many customers may take a while, so please wait for the process to complete.</p>
+                    <p className='text-gray-400'>*Изпращането на имейл до толкова много клиенти може да отнеме известно време, затова изчакайте процеса да приключи.</p>
                     
                     <button
                         type="submit"
                         className="btn bg-blue-500 text-white w-full"
                         disabled={isLoading} // Disable the button when loading
                     >
-                        {isLoading ? 'Loading...' : 'Send Email'}
+                        {isLoading ? 'Зареждане...' : 'Изпрати имейл'}
                     </button>
                 </form>
                 <button
                     onClick={toggleModal}
                     className="mt-4 text-gray-600 underline"
                 >
-                    Close
+                    Затвори
                 </button>
             </div>
         </div>

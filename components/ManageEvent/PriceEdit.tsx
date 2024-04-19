@@ -42,12 +42,12 @@ const EventPriceEditor = ({ initialPrice, eventId, isFree }) => {
     return (
         <div>
             {error && <p className="text-red-500">{error}</p>}
-            <label htmlFor="" className='text-gray-500 font-semibold'>Price*</label>
+            <label htmlFor="" className='text-gray-500 font-semibold'>Цена*</label>
             <div className=''>
                 <div className="mb-4">
                     {/* Free event selector */}
                     <label className="block text-gray-700 text-sm font-bold mb-2">
-                        Is this event free?
+                        Това събитие безплатно ли е?
                     </label>
                     <select
                         id="isFree"
@@ -55,14 +55,14 @@ const EventPriceEditor = ({ initialPrice, eventId, isFree }) => {
                         onChange={(e) => setIsFreeEvent(e.target.value === "true")}
                         className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
                     >
-                        <option value="true">Yes</option>
-                        <option value="false">No</option>
+                        <option value="true">Да</option>
+                        <option value="false">Не</option>
                     </select>
                 </div>
                 {!isFreeEvent && (
                     <div className="mb-4">
                         <label htmlFor="price" className="block text-gray-700 text-sm font-bold mb-2">
-                            Price ($)
+                            Цена (лв.)
                         </label>
                         <input
                             id="price"
@@ -83,7 +83,7 @@ const EventPriceEditor = ({ initialPrice, eventId, isFree }) => {
                 type='submit'
                 disabled={!isPriceChanged || isLoading}
             >
-                {isLoading ? 'Loading...' : 'Edit Price'}
+                {isLoading ? 'Зареждане...' : 'Редактирай цена'}
             </button>
         </div>
     );

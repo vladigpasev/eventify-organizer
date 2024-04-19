@@ -40,34 +40,34 @@ interface EventFormProps {
 
 const EVENT_FIELD_GROUPS: FieldGroup[] = [
     {
-        title: "What is your event about?",
+        title: "Информация за събитието",
         fields: [
-            { id: "eventName", label: "Event Name*", placeholder: "Type the name of your event", type: "text" },
+            { id: "eventName", label: "Име на събитие*", placeholder: "Напиши името на събитието си", type: "text" },
             //@ts-ignore
             {
                 id: "category",
-                label: "Category*",
+                label: "Категория*",
                 type: "select",
-                options: ["Music", "Technology", "Art", "Workshop", "Networking", "Sports", "Other"]
+                options: ["Музика", "Технологии", "Изкуство", "Работилница", "Нетуъркинг", "Спорт", "Образование", "Кулинария", "Мода", "Природа", "Здраве", "Наука", "Литература", "Кино", "Театър", "Танци", "Игри", "Благотворителност", "Празници", "История", "Политика", "Религия", "Комедия", "Други"]
             }
         ],
     },
     {
-        title: "Details",
+        title: "Детайли",
         fields: [
-            { id: "description", label: "Description*", placeholder: "Describe your event", type: "text", isTextArea: true },
-            { id: "dateTime", label: "Date & Time*", placeholder: "Select the date and time", type: "datetime-local" }
+            { id: "description", label: "Описание*", placeholder: "Опиши събитието си", type: "text", isTextArea: true },
+            { id: "dateTime", label: "Дата и час*", placeholder: "Избери дата и час", type: "datetime-local" }
         ],
     },
     {
-        title: "Event visibility",
+        title: "Тип събитие",
         fields: [
             //@ts-ignore
             {
                 id: "visibility",
-                label: "Visibility*",
+                label: "Тип събитие*",
                 type: "select",
-                options: ["public", "private"]
+                options: ["публично", "частно"]
             }
         ],
     },
@@ -75,7 +75,7 @@ const EVENT_FIELD_GROUPS: FieldGroup[] = [
 
 const validateField = (fieldId: string, value: string): boolean => {
     if (!value.trim()) {
-        alert(`${fieldId} is required.`);
+        alert(`${fieldId} е задължително поле.`);
         return false;
     }
     return true;
@@ -113,7 +113,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
         const category = e.currentTarget.form.category.value;
 
         if (!eventName || !category) {
-            alert('Event Name and Category are required to generate a description.');
+            alert('Име и категория на събитие са задължителни за генериране на описание.');
             return;
         }
         setIsLoadingDescription(true);
@@ -215,7 +215,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                             onClick={handleGenerateDescription}
                                             disabled={isLoadingDescription} // Disable button during loading
                                         >
-                                            {isLoadingDescription ? "Loading..." : "Generate with AI"}
+                                            {isLoadingDescription ? "Зареждане..." : "Генерирай с AI"}
                                         </button>
                                         <textarea
                                             ref={descriptionRef}
@@ -272,12 +272,12 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                 ))}
 
                 <div className='shadow-md p-10'>
-                    <h3 className='text-xl pt-5 font-medium mb-4'>Thumbnail</h3>
+                    <h3 className='text-xl pt-5 font-medium mb-4'>Заглавна снимка</h3>
                     <div className="mb-4 flex flex-col items-center justify-center">
                         <div className='max-w-96 border rounded-xl'>
                             <img
                                 src={thumbnailUrl || '/images/pngs/event.png'}
-                                alt='Event Thumbnail'
+                                alt='Заглавна снимка'
                                 className='w-full h-full object-cover object-center rounded'
                             />
                         </div>
@@ -290,7 +290,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                                 content={{
                                     button: (
                                         <a className='flex mx-auto link cursor-pointer font-semibold gap-2'>
-                                            Change Image
+                                            Промени снимка
                                         </a>
                                     )
                                 }}
@@ -307,7 +307,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
 
                 <div className='bg-white shadow-md p-10'>
                     <label htmlFor="location" className="block text-gray-700 text-sm font-bold mb-2">
-                        Location
+                        Локация
                     </label>
                     <Autocomplete>
                         <input
@@ -315,17 +315,17 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                             type="text"
                             defaultValue={initialData?.location}
                             className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
-                            placeholder="Start typing location"
+                            placeholder="Започнете да пишете локация"
                             required
                         />
                     </Autocomplete>
                 </div>
 
                 <div className='bg-white shadow-md p-10'>
-                    <h3 className='text-xl pt-5 font-medium mb-4'>Price</h3>
+                    <h3 className='text-xl pt-5 font-medium mb-4'>Цена</h3>
                     <div className="mb-4">
                         <label className="block text-gray-700 text-sm font-bold mb-2">
-                            Is this event free?
+                            Събитието безплатно ли е
                         </label>
                         <select
                             id="isFree"
@@ -333,21 +333,21 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                             onChange={(e) => setIsFreeEvent(e.target.value === "true")}
                             className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
                         >
-                            <option value="true">Yes</option>
-                            <option value="false">No</option>
+                            <option value="true">Да</option>
+                            <option value="false">Не</option>
                         </select>
                     </div>
                     {!isFreeEvent && (
                         <div className="mb-4">
                             <label htmlFor="price" className="block text-gray-700 text-sm font-bold mb-2">
-                                Price ($)
+                                Цена (лв.)
                             </label>
                             <input
                                 id="price"
                                 type="number"
                                 defaultValue={initialData?.price}
                                 className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
-                                placeholder="Enter event price"
+                                placeholder="Въведете цена на събитието"
                                 min="0.01"
                                 step="0.01"
                                 required
@@ -362,7 +362,7 @@ const EventForm: React.FC<EventFormProps> = ({ initialData, type }) => {
                         className="btn btn-wide btn-primary text-white"
                         disabled={isSubmitting}
                     >
-                        {isSubmitting ? 'Submitting...' : (type === 'create' ? 'Create Event' : 'Edit Event')}
+                        {isSubmitting ? 'Създаване...' : (type === 'create' ? 'Създай' : 'Редактирай')}
                     </button>
                 </div>
             </form>

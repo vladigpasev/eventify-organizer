@@ -78,15 +78,13 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
           <LocationChanger initialLocation={currentEvent.location} eventId={params.uuid} />
           <PublicPrivateToggle initialVisibility={currentEvent.visibility} eventId={params.uuid} />
           <EventPriceEditor initialPrice={currentEvent.price} isFree={currentEvent.isFree} eventId={params.uuid} />
-          <p className='text-gray-400 mb-5'>*Editing any significat information about your event may make your customers ask for refund! They will be notified about the changes and will have the opportunity do it. All tickets will be reissued!</p>
-          <p className='text-gray-400 mb-5'>**Any price changes will apply to new customers only!</p>
         </div>
         <UserTable eventId={params.uuid} />
       </div>
       <div className="bg-white shadow rounded p-4 mt-4">
-        <h2 className="text-xl font-semibold mb-3">Advertisement Options</h2>
+        <h2 className="text-xl font-semibold mb-3">Опции за реклама</h2>
         <div className='flex justify-center items-center'>
-          <p className='text-gray-300 font-semibold'>(COMING SOON)</p>
+          <p className='text-gray-300 font-semibold'>(ОЧАКВАЙТЕ СКОРО)</p>
         </div>
       </div>
       <DeleteEvent eventId={params.uuid} eventName={currentEvent.eventName} />

@@ -55,11 +55,11 @@ async function EmailVerify() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
             <LogoutBtn />
             <div className="bg-white shadow-xl rounded-lg p-6 max-w-sm w-full">
-                <h1 className="text-2xl font-semibold text-gray-800">Verify Your Email</h1>
+                <h1 className="text-2xl font-semibold text-gray-800">Потвърди мейла си</h1>
                 {isVerificationSent ? (
-                    <p className="text-gray-600 mt-2">The verification link is already sent to your email. If you do not have it, please contact Eventify support or try to resend it.</p>
+                    <p className="text-gray-600 mt-2">Връзката за потвърждение вече е изпратена на имейла ви. Ако нямате такава, моля, свържете се с поддръжката на Eventify или опитайте да я изпратите отново.</p>
                 ) : (
-                    <p className="text-gray-600 mt-2">The last step to complete your account creation is to verify your email address.</p>
+                    <p className="text-gray-600 mt-2">Последната стъпка, за да завършите създаването на акаунта си, е да потвърдите имейл адреса си.</p>
                 )}
                 <div className="mt-2 bg-blue-100 text-blue-800 p-3 rounded">
                     {email}

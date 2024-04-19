@@ -11,8 +11,8 @@ function Modal({ onClose, onConfirm, isLoading }) {
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <h3 className="text-lg font-bold">Confirm Deletion</h3>
-        <p className="text-sm">Please enter the event name to confirm deletion:</p>
+        <h3 className="text-lg font-bold">Потвърди изтриване</h3>
+        <p className="text-sm">Моля въведи името на събитието преди изтриване:</p>
         <input
           type="text"
           className="w-full mt-3 mb-3 p-2 border rounded"
@@ -24,13 +24,13 @@ function Modal({ onClose, onConfirm, isLoading }) {
           onClick={() => onConfirm(inputEventName)}
           disabled={isLoading}
         >
-          {isLoading ? 'Deleting...' : 'Confirm Delete'}
+          {isLoading ? 'Изтриване...' : 'Потвърди изтриване'}
         </button>
         <button
           className="btn bg-gray-500 w-full text-white mt-2"
           onClick={onClose}
         >
-          Cancel
+          Откажи
         </button>
       </div>
     </div>
@@ -49,7 +49,7 @@ function DeleteEvent({ eventId, eventName }) {
   //@ts-ignore
   const handleConfirmDelete = async (inputEventName) => {
     if (inputEventName !== eventName) {
-      alert("Event name does not match.");
+      alert("Името на събитието не съвпада.");
       return;
     }
 
@@ -78,7 +78,7 @@ function DeleteEvent({ eventId, eventName }) {
         onClick={handleDeleteClick}
         disabled={isLoading}
       >
-        Delete Event
+        Изтрий събитие
       </button>
     </div>
   );

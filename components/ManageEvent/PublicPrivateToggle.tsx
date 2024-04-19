@@ -15,7 +15,7 @@ const PublicPrivateToggle = ({ initialVisibility, eventId }) => {
         setIsLoading(true);
 
         try {
-            console.log("CLIENT: Changing visibility to " + newVisibility);
+           // console.log("CLIENT: Changing visibility to " + newVisibility);
             const response = await changeVisibility({ uuid: eventId, visibility: newVisibility });
 
             if (!response.success) {
@@ -32,7 +32,7 @@ const PublicPrivateToggle = ({ initialVisibility, eventId }) => {
     return (
         <div>
             {error && <p className="text-red-500">{error}</p>}
-            <label htmlFor="visibilityToggle" className='text-gray-500 font-semibold'>Visibility</label>
+            <label htmlFor="visibilityToggle" className='text-gray-500 font-semibold'>Тип събитите</label>
             <select
                 id="visibilityToggle"
                 value={visibility}
@@ -40,10 +40,10 @@ const PublicPrivateToggle = ({ initialVisibility, eventId }) => {
                 className="input input-bordered w-full border-b-2 p-2 my-3"
                 disabled={isLoading}
             >
-                <option value="public">Public</option>
-                <option value="private">Private</option>
+                <option value="public">Публично</option>
+                <option value="private">Частно</option>
             </select>
-            {isLoading && <p>Loading...</p>}
+            {isLoading && <p>Зареждане...</p>}
         </div>
     );
 };

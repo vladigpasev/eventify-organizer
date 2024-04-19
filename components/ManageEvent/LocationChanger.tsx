@@ -58,7 +58,7 @@ const LocationChanger = ({ initialLocation, eventId }) => {
             <form ref={formRef} onSubmit={handleSubmit}>
                 <div>
                     {error && <p className="text-red-500">{error}</p>}
-                    <label htmlFor="editLocation" className='text-gray-500 font-semibold'>Location*</label>
+                    <label htmlFor="editLocation" className='text-gray-500 font-semibold'>Локация*</label>
                     <p className="text-base font-semibold mb-4">
                         <Autocomplete
                             ref={autocompleteRef}
@@ -80,7 +80,7 @@ const LocationChanger = ({ initialLocation, eventId }) => {
                         type='submit'
                         disabled={!isLocationChanged || isLoading}
                     >
-                        {isLoading ? 'Loading...' : 'Edit location'}
+                        {isLoading ? 'Зареждане...' : 'Редактирай локация'}
                     </button>
                 </div>
             </form>

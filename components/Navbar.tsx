@@ -63,11 +63,11 @@ function Navbar() {
                                 </div>
                             </div>
                             <ul tabIndex={0} className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                                <li><a onClick={toggleMyPlan}>My plan</a></li>
+                                <li><a onClick={toggleMyPlan}>Моят план</a></li>
                                 <form action={manageAccount} className='w-full'>
-                                    <button type="submit" className='w-full'><li><a>Billing settings</a></li></button>
+                                    <button type="submit" className='w-full'><li><a>Настройки за фактуриране</a></li></button>
                                 </form>
-                                <form action={handleLogout} className='w-full'><button type='submit' className='w-full'> <li><a>Logout</a></li></button></form>
+                                <form action={handleLogout} className='w-full'><button type='submit' className='w-full'> <li><a>Изход</a></li></button></form>
                             </ul>
                         </div>
                     </div>
@@ -91,7 +91,7 @@ function Navbar() {
                                         <DashboardSvg />
                                     </div>
                                 </div>
-                                <div className={`w-[93.28px] ${isActive('/dashboard') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Dashboard</div>
+                                <div className={`w-[93.28px] ${isActive('/dashboard') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Начало</div>
                             </div>
                         </Link>
                         <form action={manageAccount} className={`w-full`}><button type='submit' className='w-full'>
@@ -101,7 +101,7 @@ function Navbar() {
                                         <InvoicesSvg />
                                     </div>
                                 </div>
-                                <div className={`w-[93.28px] ${isActive('/dashboard/invoices') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Invoices</div>
+                                <div className={`w-[93.28px] ${isActive('/dashboard/invoices') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Фактури</div>
                             </div>
                         </button></form>
                     </div>
@@ -114,7 +114,7 @@ function Navbar() {
                                             <LogoutSvg />
                                         </div>
                                     </div>
-                                    <div className={`w-[93.28px] ${isActive('/logout') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Log out</div>
+                                    <div className={`w-[93.28px] ${isActive('/logout') ? 'text-blue-800' : 'text-white'} text-sm font-medium`}>Изход</div>
                                 </div>
                             </button>
                         </form>

@@ -35,12 +35,12 @@ const EventDescriptionEditor = ({ initialDescription, eventId }) => {
 
     const handleSaveDescription = async () => {
         if (description.length < 20) {
-            setError("Description must be more than 20 characters!");
+            setError("Описанието трябва да бъде повече от 20 символа!");
         };
         if (!isDescriptionChanged || description.length < 20) return;
         setIsLoading(true); // Start loading
         try {
-            console.log("CLIENT: " + JSON.stringify({ uuid: eventId, description }));
+            //console.log("CLIENT: " + JSON.stringify({ uuid: eventId, description }));
             const response = await editDescription({ uuid: eventId, description });
 
             if (response.success) {
@@ -58,7 +58,7 @@ const EventDescriptionEditor = ({ initialDescription, eventId }) => {
     return (
         <div>
             {error && <p className="text-red-500">{error}</p>} 
-            <label htmlFor="editdescr" className='text-gray-500 font-semibold'>Description</label>
+            <label htmlFor="editdescr" className='text-gray-500 font-semibold'>Описание</label>
             <p className="text-base font-normal mb-4 h-fit mt-2">
                 <textarea
                     id='editdescr'
@@ -70,14 +70,14 @@ const EventDescriptionEditor = ({ initialDescription, eventId }) => {
                 />
             </p>
             <p className='text-gray-400'>
-                {description.length}/1000 characters
+                {description.length}/1000 символа
             </p>
             <button
                 className="btn btn-primary mb-10"
                 onClick={handleSaveDescription}
                 disabled={!isDescriptionChanged || isLoading}
             >
-                {isLoading ? 'Loading...' : 'Edit description'}
+                {isLoading ? 'Зареждане...' : 'Запази описание'}
             </button>
         </div>
     );

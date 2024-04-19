@@ -43,7 +43,7 @@ const EventDateTimeEditor = ({ initialDateTime, eventId }) => {
     return (
         <div>
             {error && <p className="text-red-500">{error}</p>}
-            <label htmlFor="editDateTime" className='text-gray-500 font-semibold'>Date and time*</label>
+            <label htmlFor="editDateTime" className='text-gray-500 font-semibold'>Дата и час*</label>
             <p className="text-base font-semibold mb-4">
                 <input
                     id='editDateTime'
@@ -62,7 +62,7 @@ const EventDateTimeEditor = ({ initialDateTime, eventId }) => {
                 type='submit'
                 disabled={!isDateTimeChanged || isLoading}
             >
-                {isLoading ? 'Loading...' : 'Edit date and time'}
+                {isLoading ? 'Зареждане...' : 'Редактирай дата и час'}
             </button>
         </div>
     );

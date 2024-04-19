@@ -50,8 +50,8 @@ function SendMailBtn({ email, initialCountdown }:any) {
                     disabled={isSending || countdown > 0}
                 >
                     {countdown > 0 
-                        ? `Resend in ${countdown} seconds` 
-                        : (isSending ? 'Loading...' : 'Send Verification Link')
+                        ? `Изпрати отново след ${countdown} секунди` 
+                        : (isSending ? 'Зареждане...' : 'Изпрати линк')
                     }
                 </button>
             </form>

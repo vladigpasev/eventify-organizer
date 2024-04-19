@@ -41,7 +41,7 @@ async function MyEvents() {
     return (
         <div className='p-5'>
             <div className='pb-5 flex flex-row justify-between items-center'>
-                <h1 className='text-xl font-medium'>My Events</h1>
+                <h1 className='text-xl font-medium'>Моите събития</h1>
                 <a href="/dashboard/create">
                     <div
                         className="w-[47px] h-[46px] px-3.5 py-2.5 bg-white rounded-xl border border-blue-800 justify-center items-center gap-2.5 inline-flex cursor-pointer"
@@ -56,7 +56,7 @@ async function MyEvents() {
                         <div key={event.uuid} className='bg-white w-46 p-3 rounded overflow-hidden shadow-xl'>
                             <div className='pb-2 h-60'>
                                 {/* Replace with dynamic image source */}
-                                <img src={event.thumbnailUrl} alt="Event Image" className='w-full h-full object-cover object-center rounded' />
+                                <img src={event.thumbnailUrl} alt="Корица на събитието" className='w-full h-full object-cover object-center rounded' />
                             </div>
                             <div className='flex flex-col flex-grow'>
                                 <div className="text-black text-base font-normal">{event.eventName}</div>
@@ -65,13 +65,13 @@ async function MyEvents() {
                                 <div className='flex flex-row justify-between'>
                                     <div className='flex items-center gap-1'> 
                                         <EurSign />
-                                        <div className="text-black text-xs font-medium leading-tight">{event.isFree ? 'Free' : `From ${event.price} BGN`}</div>
+                                        <div className="text-black text-xs font-medium leading-tight">{event.isFree ? 'Безплатно' : `От ${event.price} лв.`}</div>
                                     </div>
                                     <a href={`/dashboard/events/${event.uuid}`}><div className='cursor-pointer text-blue-800 hover:opacity-80'><GoSvg /></div></a>
                                 </div>
                             </div>
                         </div>
-                    )) : <div>No events to display</div>}
+                    )) : <div>Няма събития за показване</div>}
                 </div>
             </div>
         </div>

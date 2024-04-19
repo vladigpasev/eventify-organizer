@@ -16,7 +16,7 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId }) => {
             const response = await editThumbnail({ uuid: eventId, thumbnailUrl });
 
             if (response.success) {
-                alert("Thumbnail updated successfully!")
+                alert("Корицата е запазена успешно!")
             }
         } catch (error) {
             console.log(error);
@@ -34,7 +34,7 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId }) => {
             <div className='max-w-xs w-full h-48 overflow-hidden rounded-xl border'>
                     <img
                         src={thumbnailUrl}
-                        alt='Event Thumbnail'
+                        alt='Корица на събитие'
                         className='w-full h-full object-cover object-center'
                     />
                 </div>
@@ -47,7 +47,7 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId }) => {
                             content={{
                                 button: (
                                     <a className='flex mx-auto link cursor-pointer font-semibold gap-2 z-20'>
-                                        Change Thumbnail
+                                        Промени корица
                                     </a>
                                 )
                             }}

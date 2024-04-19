@@ -137,7 +137,7 @@ function Register() {
                     <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
                         <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
                             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-                                {step === 1 ? "Create an organization account" : "Create an organization account"}
+                                {step === 1 ? "Създай организаторски акаунт" : "Създай организаторски акаунт"}
                             </h1>
                             {error && <p className="text-error">{error}</p>} {/* Display error message */}
                             <form className="space-y-4 md:space-y-6" onSubmit={handleSubmit}>
@@ -146,7 +146,7 @@ function Register() {
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2 -ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                                         </svg>
-                                        Back
+                                        Назад
                                     </button>
                                 )}
                                 {/* Fields for Step 1 */}
@@ -154,18 +154,18 @@ function Register() {
                                     <>
                                         {/* First Name */}
                                         <div>
-                                            <label htmlFor="firstname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">First Name</label>
-                                            <input type="text" name="firstname" id="firstname" value={formData.firstname} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="John" required />
+                                            <label htmlFor="firstname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Име</label>
+                                            <input type="text" name="firstname" id="firstname" value={formData.firstname} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Иван" required />
                                         </div>
                                         {/* Last Name */}
                                         <div>
-                                            <label htmlFor="lastname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Last Name</label>
-                                            <input type="text" name="lastname" id="lastname" value={formData.lastname} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Doe" required />
+                                            <label htmlFor="lastname" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Фамилия</label>
+                                            <input type="text" name="lastname" id="lastname" value={formData.lastname} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Пенев" required />
                                         </div>
                                         {/* Company Name */}
                                         <div>
-                                            <label htmlFor="company" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Company Name</label>
-                                            <input type="text" name="company" id="company" value={formData.company} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Contoso Ltd." required />
+                                            <label htmlFor="company" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Име на компания</label>
+                                            <input type="text" name="company" id="company" value={formData.company} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Пример ЕООД" required />
                                         </div>
                                     </>
                                 )}
@@ -174,28 +174,28 @@ function Register() {
                                     <>
                                         {/* Email */}
                                         <div>
-                                            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Your email</label>
+                                            <label htmlFor="email" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Имейл</label>
                                             <input type="email" name="email" id="email" value={formData.email} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="name@company.com" required />
                                         </div>
                                         {/* Password */}
                                         <div>
-                                            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                                            <label htmlFor="password" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Парола</label>
                                             <input type="password" name="password" id="password" value={formData.password} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
                                             {/* Password Requirements */}
                                             <div className="text-sm mt-2">
-                                                <p>Password must have:</p>
+                                                <p>Паролата трябва да съдържа:</p>
                                                 <ul>
-                                                    <li className={passwordLength ? 'text-green-500' : 'text-red-500'}>At least 12 characters</li>
-                                                    <li className={uppercase ? 'text-green-500' : 'text-red-500'}>An uppercase letter</li>
-                                                    <li className={lowercase ? 'text-green-500' : 'text-red-500'}>A lowercase letter</li>
-                                                    <li className={number ? 'text-green-500' : 'text-red-500'}>A number</li>
-                                                    <li className={symbol ? 'text-green-500' : 'text-red-500'}>A symbol (!@#$%^&* etc.)</li>
+                                                    <li className={passwordLength ? 'text-green-500' : 'text-red-500'}>Поне 12 символа</li>
+                                                    <li className={uppercase ? 'text-green-500' : 'text-red-500'}>Поне една главна буква</li>
+                                                    <li className={lowercase ? 'text-green-500' : 'text-red-500'}>Поне една малка буква</li>
+                                                    <li className={number ? 'text-green-500' : 'text-red-500'}>Число</li>
+                                                    <li className={symbol ? 'text-green-500' : 'text-red-500'}>Символ (!@#$%^&* etc.)</li>
                                                 </ul>
                                             </div>
                                         </div>
                                         {/* Confirm Password */}
                                         <div>
-                                            <label htmlFor="confirmPassword" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm password</label>
+                                            <label htmlFor="confirmPassword" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Потвърди парола</label>
                                             <input type="password" name="confirmPassword" id="confirmPassword" value={formData.confirmPassword} onChange={handleInputChange} className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
                                         </div>
                                     </>
@@ -205,18 +205,18 @@ function Register() {
                                 {step === 1 ? (
                                     // Next button for the first step
                                     <button type="button" onClick={goToNextStep} className="btn w-full btn-primary">
-                                        Next
+                                        Напред
                                     </button>
                                 ) : (
                                     // Register button for the second step
                                     <button type="submit" className={`btn w-full ${loading ? 'bg-gray-400' : 'btn-primary'}`} disabled={loading}>
-                                        {loading ? 'Loading...' : 'Register'}
+                                        {loading ? 'Зареждане...' : 'Регистрация'}
                                     </button>
                                 )}
 
                                 {/* Redirect to Login */}
                                 <p className="text-sm font-light text-gray-500 dark:text-gray-400">
-                                    Already have an account? <a href="/auth/login" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Login here</a>
+                                    Вече имаш акаунт? <a href="/auth/login" className="font-medium text-primary-600 hover:underline dark:text-primary-500">Вход</a>
                                 </p>
                             </form>
                         </div>

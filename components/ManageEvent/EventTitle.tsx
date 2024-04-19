@@ -23,7 +23,7 @@ const EventTitleEditor = ({ initialTitle, eventId }) => {
 
     const handleSaveTitle = async () => {
         if (title.length < 3) {
-            setError("Title must be more than 3 characters!");
+            setError("Заглавието трябва да бъде по-дълго от 3 символа!");
         };
         if (!isTitleChanged || title.length < 3) return;
 
@@ -58,7 +58,7 @@ const EventTitleEditor = ({ initialTitle, eventId }) => {
                 />
             </h1>
             <p className='text-gray-400'>
-                {title.length}/20 characters
+                {title.length}/20 символа
             </p>
             <button
                 className="btn btn-primary mb-10"
@@ -66,7 +66,7 @@ const EventTitleEditor = ({ initialTitle, eventId }) => {
                 type='submit'
                 disabled={!isTitleChanged || isLoading}
             >
-                {isLoading ? 'Loading...' : 'Edit title'}
+                {isLoading ? 'Зареждане...' : 'Запази заглавие'}
             </button>
         </div>
     );
