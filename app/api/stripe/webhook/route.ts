@@ -67,9 +67,9 @@ function determineSubscriptionStatus(subscription) {
   const lookupKey = subscription.items.data[0].price.lookup_key;
 
   switch (lookupKey) {
-    case 'basic_plan':
+    case 'basic_plan_month' || 'basic_plan_year':
       return 'Basic';
-    case 'premium_plan':
+    case 'premium_plan_month' || 'premium_plan_year':
       return 'Premium';
     default:
       return 'Hobby'; // Default to 'Hobby' if no matching key is found

@@ -82,7 +82,7 @@ export async function createEvent(data: any) {
                 //User can create more events
             }
             break;
-        case 'basic_plan':
+        case 'basic_plan_month' || 'basic_plan_year':
             const eventsQueryResultBasic = await db.select()
                 .from(events)
                 .where(eq(events.userUuid, userUuid))
@@ -93,7 +93,7 @@ export async function createEvent(data: any) {
                 //User can create more events
             }
             break;
-        case 'premium_plan':
+        case 'premium_plan_month' || 'premium_plan_year':
             break;
         default:
             const eventsQueryResultNoPlan = await db.select()
