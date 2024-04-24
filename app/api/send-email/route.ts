@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
                 .execute();
         }
 
-        return new Response(JSON.stringify({ success: true }), {
+        return new Response(JSON.stringify({ success: true, data: JSON.stringify({customerEvents}) }), {
             status: 200
         });
     } catch (error) {
