@@ -40,7 +40,7 @@
     "bcrypt": "^5.1.1",
     "daisyui": "^4.5.0",
     "dotenv": "^16.3.1",
-    "drizzle-kit": "^0.20.9",
+    "drizzle-kit": "^0.20.17",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",
     "postcss": "^8",
