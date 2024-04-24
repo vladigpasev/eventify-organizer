@@ -67,7 +67,7 @@ const EVENT_FIELD_GROUPS: FieldGroup[] = [
                 id: "visibility",
                 label: "Тип събитие*",
                 type: "select",
-                options: ["публично", "частно"]
+                options: ["public", "private"],
             }
         ],
     },
