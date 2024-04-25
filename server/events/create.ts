@@ -77,7 +77,7 @@ export async function createEvent(data: any) {
                 .where(eq(events.userUuid, userUuid))
                 .execute();
             if (eventsQueryResultHobby.length >= 5) {
-                return { success: false, message: 'You are currently with a hobby plan. You can create up to 5 events. Please upgrade your plan or delete old events to create more!' };
+                return { success: false, message: 'Понастоящем сте с hobby план. Можете да създавате до 5 събития. Моля, надградете плана си или изтрийте стари събития, за да създадете повече!' };
             } else {
                 //User can create more events
             }
@@ -87,8 +87,8 @@ export async function createEvent(data: any) {
                 .from(events)
                 .where(eq(events.userUuid, userUuid))
                 .execute();
-            if (eventsQueryResultBasic.length >= 20) {
-                return { success: false, message: 'You are currently with a basic plan. You can create up to 20 events. Please upgrade your plan or delete old events to create more!' };
+            if (eventsQueryResultBasic.length >= 15) {
+                return { success: false, message: 'Понастоящем сте с basic план. Можете да създавате до 15 събития. Моля, надградете плана си или изтрийте стари събития, за да създадете повече!' };
             } else {
                 //User can create more events
             }
@@ -101,7 +101,7 @@ export async function createEvent(data: any) {
                 .where(eq(events.userUuid, userUuid))
                 .execute();
             if (eventsQueryResultNoPlan.length >= 5) {
-                return { success: false, message: 'Please upgrade your plan' };
+                return { success: false, message: 'Понастоящем сте с hobby план. Можете да създавате до 5 събития. Моля, надградете плана си или изтрийте стари събития, за да създадете повече!' };
             } else {
                 //User can create more events
             }
