@@ -71,7 +71,20 @@ export async function markAsEntered(data: any) {
     try {
         const ticketToken = validatedData.ticketToken;
         const decodedTicketToken = await jwt.verify(ticketToken, process.env.JWT_SECRET);
-        const customerUuid = decodedTicketToken.uuid;
+        let customerUuid;
+        if (decodedTicketToken.paper) {
+            const paperUuid = decodedTicketToken.uuid;
+            const currentPaperTicketDb = await db.select({
+                assignedCustomer: paperTickets.assignedCustomer,
+            })
+                .from(paperTickets)
+                .where(eq(paperTickets.uuid, paperUuid))
+                .execute();
+            const currentPaperTicket = currentPaperTicketDb[0];
+            customerUuid = currentPaperTicket.assignedCustomer;
+        } else {
+            customerUuid = decodedTicketToken.uuid;
+        }
         await db.update(eventCustomers)
             .set({
                 isEntered: true,
@@ -95,7 +108,20 @@ export async function markAsExited(data: any) {
     try {
         const ticketToken = validatedData.ticketToken;
         const decodedTicketToken = await jwt.verify(ticketToken, process.env.JWT_SECRET);
-        const customerUuid = decodedTicketToken.uuid;
+        let customerUuid;
+        if (decodedTicketToken.paper) {
+            const paperUuid = decodedTicketToken.uuid;
+            const currentPaperTicketDb = await db.select({
+                assignedCustomer: paperTickets.assignedCustomer,
+            })
+                .from(paperTickets)
+                .where(eq(paperTickets.uuid, paperUuid))
+                .execute();
+            const currentPaperTicket = currentPaperTicketDb[0];
+            customerUuid = currentPaperTicket.assignedCustomer;
+        } else {
+            customerUuid = decodedTicketToken.uuid;
+        }
         await db.update(eventCustomers)
             .set({
                 isEntered: false,
