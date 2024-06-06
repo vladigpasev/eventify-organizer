@@ -4,7 +4,7 @@ import { z } from 'zod';
 //@ts-ignore
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eventCustomers, events } from '../../../schema/schema';
+import { eventCustomers, events, paperTickets } from '../../../schema/schema';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
@@ -34,6 +34,7 @@ export async function createManualTicket(data: any) {
         email: z.string().nonempty(),
         guestsCount: z.any(),
         eventUuid: z.string().nonempty(),
+        paperTicketAccessToken: z.any(),
     });
 
     try {
@@ -61,6 +62,36 @@ export async function createManualTicket(data: any) {
             })
             //@ts-ignore
             .where(eq(eventCustomers.uuid, customerUuid));
+
+        if (validatedData.paperTicketAccessToken) {
+            const paperTicketAccessToken = validatedData.paperTicketAccessToken;
+            const paperTicketAccessTokenDecoded = await jwt.verify(paperTicketAccessToken, process.env.JWT_SECRET);
+            const paperTicketUuid = paperTicketAccessTokenDecoded.uuid;
+
+            const currentPaperTicketDb = await db.select({
+                eventUuid: paperTickets.eventUuid,
+                assignedCustomer: paperTickets.assignedCustomer
+            })
+                .from(paperTickets)
+                .where(eq(paperTickets.uuid, paperTicketUuid))
+                .execute();
+            const currentCustomer = currentPaperTicketDb[0];
+
+            if (currentCustomer.eventUuid !== validatedData.eventUuid) {
+
+            } else {
+                if (currentCustomer.assignedCustomer) {
+
+                } else {
+                    await db.update(paperTickets)
+                        .set({
+                            assignedCustomer: customerUuid,
+                        })
+                        //@ts-ignore
+                        .where(eq(paperTickets.uuid, paperTicketUuid));
+                }
+            }
+        }
 
         const getEventData = await db.select({
             eventName: events.eventName,

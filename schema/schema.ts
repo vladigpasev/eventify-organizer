@@ -53,7 +53,16 @@ export const eventCustomers = pgTable('eventCustomers', {
   hidden: boolean('hidden').default(false),
   rated: boolean('rated').default(false),
   sentEmail: boolean('sentEmail').default(false),
+  isPaperTicket: boolean('isPaperTicket').default(false),
 });
+
+export const paperTickets = pgTable('paperTickets', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
+  eventUuid: varchar('eventUuid', {length: 100}).notNull(),
+  assignedCustomer: varchar('assignedCustomer', {length: 255}),
+});
+
 
 export const comments = pgTable('comments', {
   id: serial('id').primaryKey(),

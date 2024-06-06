@@ -4,66 +4,133 @@
 import React, { useState } from 'react';
 import { createManualTicket } from '@/server/events/tickets/generate';
 import { checkAuthenticated } from '@/server/auth';
+import { checkPaperToken } from '@/server/events/tickets/check_paper';
 import { useRouter } from 'next/navigation';
+import { QrScanner } from '@yudiel/react-qr-scanner';
 
 //@ts-ignore
 function AddCustomer({ eventId, onCustomerAdded }) {
     const router = useRouter();
-
-    // State to control modal visibility
     const [isModalOpen, setModalOpen] = useState(false);
+    const [paperTicketAccessToken, setPaperTicketAccessToken] = useState(null);
+    const [isQrScannerOpen, setQrScannerOpen] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
-    // Function to toggle modal visibility
     const toggleModal = async () => {
-        const isAuthenticated = await checkAuthenticated(); // Check if the user is authenticated
+        const isAuthenticated = await checkAuthenticated();
         if (isAuthenticated) {
-            setModalOpen(!isModalOpen); // If authenticated, toggle the modal
+            if (isModalOpen) {
+                setPaperTicketAccessToken(null); // Clear paper ticket token when closing the modal
+                setErrorMessage(''); // Clear error message when closing the modal
+            }
+            setModalOpen(!isModalOpen);
         } else {
-            router.refresh(); // If not authenticated, reload the page
+            router.refresh();
             alert('Your session is expired. Please refresh the page to sign in again.')
         }
     };
 
+    //@ts-ignore
+    const handleQrScan = async (result) => {
+        if (result) {
+            try {
+                const response = await checkPaperToken({ eventUuid: eventId, token: result });
+                if (response.success) {
+                    setPaperTicketAccessToken(result);
+                    setQrScannerOpen(false);
+                    setErrorMessage('');
+                } else {
+                    setErrorMessage('Хартиеният билет е невалиден');
+                    setQrScannerOpen(false);
+                }
+            } catch (error) {
+                console.error('Error during paper ticket verification:', error);
+                setErrorMessage('Грешка при верификация на хартиения билет');
+                setQrScannerOpen(false);
+            }
+        }
+    };
+
+    //@ts-ignore
+    const handleQrError = (error) => {
+        console.error('Error during QR Code scan:', error);
+        setQrScannerOpen(false);
+    };
+
+    const handleDeletePaperTicket = () => {
+        setPaperTicketAccessToken(null);
+        setErrorMessage('');
+    };
 
     return (
         <div>
-            <div onClick={toggleModal} className='text-gray-600 flex flex-row justify-center items-center btn'><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={20} fill='currentColor'><path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z" fill='currentColor' /></svg><div> Създай билет</div></div>
-            {isModalOpen && <Modal toggleModal={toggleModal} eventId={eventId} onCustomerAdded={onCustomerAdded} />}
+            <div onClick={toggleModal} className='text-gray-600 flex flex-row justify-center items-center btn'>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={20} fill='currentColor'>
+                    <path d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z" fill='currentColor' />
+                </svg>
+                <div> Създай билет</div>
+            </div>
+            {isModalOpen && (
+                <Modal
+                    toggleModal={toggleModal}
+                    eventId={eventId}
+                    onCustomerAdded={onCustomerAdded}
+                    paperTicketAccessToken={paperTicketAccessToken}
+                    setQrScannerOpen={setQrScannerOpen}
+                    handleDeletePaperTicket={handleDeletePaperTicket}
+                    errorMessage={errorMessage}
+                    setPaperTicketAccessToken={setPaperTicketAccessToken}
+                />
+            )}
+            {isQrScannerOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center px-4 z-50">
+                    <div className="bg-white p-6 rounded-lg max-w-lg w-full">
+                        <QrScanner
+                            onDecode={handleQrScan}
+                            onError={handleQrError}
+                        />
+                        <button onClick={() => setQrScannerOpen(false)} className="btn mt-4">Откажи сканиране</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
+
 //@ts-ignore
-function Modal({ toggleModal, eventId, onCustomerAdded }) {
+function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, setQrScannerOpen, handleDeletePaperTicket, errorMessage, setPaperTicketAccessToken }) {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+    
     //@ts-ignore
     const handleSubmit = async (event) => {
-        event.preventDefault(); // Prevent default form submission
-        setIsLoading(true); // Set loading state to true when submission starts
+        event.preventDefault();
+        setIsLoading(true);
 
         const formData = {
             firstname: event.target.name.value,
             lastname: event.target.surname.value,
             email: event.target.email.value,
             guestsCount: event.target.guests_count.value,
-            eventUuid: eventId
+            eventUuid: eventId,
+            paperTicketAccessToken: paperTicketAccessToken
         };
 
-        // Call the createManualTicket server action with formData
         try {
-            const isAuthenticated = await checkAuthenticated(); // Check if the user is authenticated
+            const isAuthenticated = await checkAuthenticated();
             if (!isAuthenticated) {
                 alert('Сесията ти е изтекла. Моля презареди страницата, за да влезеш в акаунта си отново.');
-                router.refresh;
+                router.refresh();
                 throw "Сесията ти е изтекла. Моля презареди страницата, за да влезеш в акаунта си отново.";
             }
             await createManualTicket(formData);
-            toggleModal(); // Close modal on successful submission
+            setPaperTicketAccessToken(null); // Clear the paper ticket token on successful submission
+            toggleModal();
             onCustomerAdded();
         } catch (error) {
             console.error('Failed to create manual ticket:', error);
         } finally {
-            setIsLoading(false); // Reset loading state whether submission is successful or fails
+            setIsLoading(false);
         }
     };
 
@@ -71,6 +138,19 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center px-4 z-50">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full">
                 <h2 className="text-xl mb-4 font-bold">Създай билет</h2>
+                {errorMessage && (
+                    <div className="text-red-500 mb-2">
+                        {errorMessage}
+                    </div>
+                )}
+                {paperTicketAccessToken ? (
+                    <div className='flex gap-2 mb-5'>
+                        <p>Добавен хартиен билет</p>
+                        <button onClick={handleDeletePaperTicket} className="link text-red-500">Изтрий</button>
+                    </div>
+                ) : (
+                    <button onClick={() => setQrScannerOpen(true)} className='btn btn-primary mb-2'>Добави хартиен билет</button>
+                )}
                 <form className="space-y-4" onSubmit={handleSubmit}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -104,15 +184,14 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
                             required
                         />
                     </div>
-                        <input
-                            id='guests_count'
-                            type="hidden"
-                            placeholder="Guests Count"
-                            className=""
-                            defaultValue={1}
-                            min={1}
-                            required
-                        />
+                    <input
+                        id='guests_count'
+                        type="hidden"
+                        placeholder="Guests Count"
+                        defaultValue={1}
+                        min={1}
+                        required
+                    />
                     <div className='flex items-start gap-2'>
                         <input type="checkbox" id='declare' value="declare" className='checkbox' required />
                         <label htmlFor="declare" className='text-gray-600 text-base cursor-pointer'>Информиран съм, че при ръчно добавяне на клиенти потребителят ще получи билети на електронната си поща и аз трябва да обработя плащането самостоятелно.</label>
@@ -120,7 +199,7 @@ function Modal({ toggleModal, eventId, onCustomerAdded }) {
                     <button
                         type="submit"
                         className="btn bg-blue-500 text-white w-full"
-                        disabled={isLoading} // Disable the button when loading
+                        disabled={isLoading}
                     >
                         {isLoading ? 'Зареждане...' : 'Създай билет'}
                     </button>

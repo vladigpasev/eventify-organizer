@@ -4,7 +4,7 @@ import { z } from 'zod';
 //@ts-ignore
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eventCustomers } from '../../../schema/schema';
+import { eventCustomers, paperTickets } from '../../../schema/schema';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
@@ -21,7 +21,21 @@ export async function checkTicket(data: any) {
     try {
         const ticketToken = validatedData.qrData;
         const decodedTicketToken = await jwt.verify(ticketToken, process.env.JWT_SECRET);
-        const customerUuid = decodedTicketToken.uuid;
+        let customerUuid;
+        if (decodedTicketToken.paper) {
+            const paperUuid = decodedTicketToken.uuid;
+            const currentPaperTicketDb = await db.select({
+                assignedCustomer: paperTickets.assignedCustomer,
+            })
+                .from(paperTickets)
+                .where(eq(paperTickets.uuid, paperUuid))
+                .execute();
+            const currentPaperTicket = currentPaperTicketDb[0];
+            customerUuid = currentPaperTicket.assignedCustomer;
+        } else {
+            customerUuid = decodedTicketToken.uuid;
+        }
+
         const currentCustomerDb = await db.select({
             firstName: eventCustomers.firstname,
             lastName: eventCustomers.lastname,

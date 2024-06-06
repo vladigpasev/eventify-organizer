@@ -1,0 +1,1 @@
+ALTER TABLE "paperTickets" ALTER COLUMN "assignedCustomer" SET DATA TYPE varchar(255);
