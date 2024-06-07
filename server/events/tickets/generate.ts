@@ -13,6 +13,7 @@ import nodemailer from 'nodemailer';
 //@ts-ignore
 import QRCode from 'qrcode';
 
+
 const db = drizzle(sql);
 //@ts-ignore
 async function generateQRBase64(url) {
@@ -24,7 +25,6 @@ async function generateQRBase64(url) {
         return null;
     }
 }
-
 
 export async function createManualTicket(data: any) {
     // Define a schema for event data validation
@@ -55,96 +55,126 @@ export async function createManualTicket(data: any) {
         // Generate a ticket token using the retrieved uuid
         const ticketToken = jwt.sign({ uuid: customerUuid }, process.env.JWT_SECRET);
 
-        // Update the record with the ticket token
-        await db.update(eventCustomers)
+        // Run the updates in parallel
+        const updateCustomerPromise = db.update(eventCustomers)
             .set({
                 ticketToken,
             })
             //@ts-ignore
             .where(eq(eventCustomers.uuid, customerUuid));
 
+        let paperTicketUpdatePromise = Promise.resolve();
         if (validatedData.paperTicketAccessToken) {
-            const paperTicketAccessToken = validatedData.paperTicketAccessToken;
-            const paperTicketAccessTokenDecoded = await jwt.verify(paperTicketAccessToken, process.env.JWT_SECRET);
-            const paperTicketUuid = paperTicketAccessTokenDecoded.uuid;
+            paperTicketUpdatePromise = (async () => {
+                const paperTicketAccessToken = validatedData.paperTicketAccessToken;
+                const paperTicketAccessTokenDecoded = await jwt.verify(paperTicketAccessToken, process.env.JWT_SECRET);
+                const paperTicketUuid = paperTicketAccessTokenDecoded.uuid;
 
-            const currentPaperTicketDb = await db.select({
-                eventUuid: paperTickets.eventUuid,
-                assignedCustomer: paperTickets.assignedCustomer
-            })
-                .from(paperTickets)
-                .where(eq(paperTickets.uuid, paperTicketUuid))
-                .execute();
-            const currentCustomer = currentPaperTicketDb[0];
+                const currentPaperTicketDb = await db.select({
+                    eventUuid: paperTickets.eventUuid,
+                    assignedCustomer: paperTickets.assignedCustomer,
+                    nineDigitCode: paperTickets.nineDigitCode,
+                })
+                    .from(paperTickets)
+                    .where(eq(paperTickets.uuid, paperTicketUuid))
+                    .execute();
+                const currentCustomer = currentPaperTicketDb[0];
 
-            if (currentCustomer.eventUuid !== validatedData.eventUuid) {
-
-            } else {
-                if (currentCustomer.assignedCustomer) {
-
+                if (currentCustomer.eventUuid !== validatedData.eventUuid) {
+                    // Handle event mismatch if needed
+                    return;
                 } else {
-                    await db.update(paperTickets)
-                        .set({
-                            assignedCustomer: customerUuid,
-                        })
-                        //@ts-ignore
-                        .where(eq(paperTickets.uuid, paperTicketUuid));
+                    if (currentCustomer.assignedCustomer) {
+                        // Handle already assigned customer if needed
+                        return;
+                    } else {
+                        await db.update(paperTickets)
+                            .set({
+                                assignedCustomer: customerUuid,
+                            })
+                            //@ts-ignore
+                            .where(eq(paperTickets.uuid, paperTicketUuid));
+
+                        // Add nineDigitCode to eventCustomers table
+                        if (currentCustomer.nineDigitCode) {
+                            await db.update(eventCustomers)
+                                .set({
+                                    paperTicket: currentCustomer.nineDigitCode,
+                                })
+                                //@ts-ignore
+                                .where(eq(eventCustomers.uuid, customerUuid));
+                        }
+                    }
                 }
-            }
+            })();
         }
 
-        const getEventData = await db.select({
+        const eventDataPromise = db.select({
             eventName: events.eventName,
             thumbnailUrl: events.thumbnailUrl,
         })
             .from(events)
             .where(eq(events.uuid, validatedData.eventUuid))
             .execute();
-        const eventData = getEventData[0];
 
-        const email = validatedData.email;
-        const customerName = (validatedData.firstname + ' ' + validatedData.lastname);
-        const eventName = eventData.eventName;
-        const customerEmail = email;
-        const currentDate = new Date();
-        const options = {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit'
-        };
-        //@ts-ignore
-        const ticketDate = currentDate.toLocaleDateString('en-US', options);
+        await Promise.all([updateCustomerPromise, paperTicketUpdatePromise]);
 
-        let thumbnailUrl;
+        const eventData = (await eventDataPromise)[0];
 
-        if (eventData.thumbnailUrl === "/images/pngs/event.png") {
-            thumbnailUrl = process.env.BASE_URL + "/images/pngs/event.png";
-        } else {
-            thumbnailUrl = eventData.thumbnailUrl;
-        }
-
-        const qrCodeDataURL = await generateQRBase64(ticketToken);
-        const qrCodeBuffer = Buffer.from(qrCodeDataURL.split("base64,")[1], "base64");
-
-        let transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_SERVER_HOST,
-            port: process.env.EMAIL_SERVER_PORT,
-            secure: false,
-            auth: {
-                user: process.env.EMAIL_SERVER_USER,
-                pass: process.env.EMAIL_SERVER_PASSWORD,
-            },
-            tls: {
-                ciphers: 'SSLv3'
-            }
+        // Defer email sending to not block the response
+        sendTicketEmail({
+            email: validatedData.email,
+            customerName: `${validatedData.firstname} ${validatedData.lastname}`,
+            eventName: eventData.eventName,
+            ticketToken,
+            thumbnailUrl: eventData.thumbnailUrl,
         });
 
-        let info = await transporter.sendMail({
-            from: '"Eventify (' + eventName + ')" ' + process.env.EMAIL_FROM,
-            to: email, // list of receivers
-            subject: eventName + " - Билет", // Subject line
-            text: 'Здравей, ' + customerName + '! Този имейл е да те информира, че ти успешно закупи билет за събитието ' + eventName + '! Можеш да видиш билета си като кликнеш на линка. Линк: ' + process.env.TICKETS_BASE_URL + '/' + ticketToken,
-            html: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en"><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta name="x-apple-disable-message-reformatting"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta content="telephone=no" name="format-detection"><title>New Template 2</title> <!--[if (mso 16)]><style type="text/css">     a {text-decoration: none;}     </style><![endif]--> <!--[if gte mso 9]><style>sup { font-size: 100% !important; }</style><![endif]--> <!--[if gte mso 9]><xml> <o:OfficeDocumentSettings> <o:AllowPNG></o:AllowPNG> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettings> </xml>\
+        return { success: true, message: 'Event created successfully', customerUuid, ticketToken };
+
+    } catch (error) {
+        console.error('Error:', error);
+        return { success: false, message: 'Event creation failed' };
+    }
+}
+
+//@ts-ignore
+async function sendTicketEmail({ email, customerName, eventName, ticketToken, thumbnailUrl }) {
+    const currentDate = new Date();
+    const options = {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+    };
+    //@ts-ignore
+    const ticketDate = currentDate.toLocaleDateString('en-US', options);
+
+    if (thumbnailUrl === "/images/pngs/event.png") {
+        thumbnailUrl = process.env.BASE_URL + "/images/pngs/event.png";
+    }
+
+    const qrCodeDataURL = await generateQRBase64(ticketToken);
+    const qrCodeBuffer = Buffer.from(qrCodeDataURL.split("base64,")[1], "base64");
+
+    let transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_SERVER_HOST,
+        port: process.env.EMAIL_SERVER_PORT,
+        secure: false,
+        auth: {
+            user: process.env.EMAIL_SERVER_USER,
+            pass: process.env.EMAIL_SERVER_PASSWORD,
+        },
+        tls: {
+            ciphers: 'SSLv3'
+        }
+    });
+
+    let info = await transporter.sendMail({
+        from: `"Eventify (${eventName})" <${process.env.EMAIL_FROM}>`,
+        to: email,
+        subject: `${eventName} - Билет`,
+        text: `Здравей, ${customerName}! Този имейл е да те информира, че ти успешно закупи билет за събитието ${eventName}! Можеш да видиш билета си като кликнеш на линка. Линк: ${process.env.TICKETS_BASE_URL}/${ticketToken}`,
+        html: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en"><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta name="x-apple-disable-message-reformatting"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta content="telephone=no" name="format-detection"><title>New Template 2</title> <!--[if (mso 16)]><style type="text/css">     a {text-decoration: none;}     </style><![endif]--> <!--[if gte mso 9]><style>sup { font-size: 100% !important; }</style><![endif]--> <!--[if gte mso 9]><xml> <o:OfficeDocumentSettings> <o:AllowPNG></o:AllowPNG> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettings> </xml>\
                 <![endif]--><style type="text/css">#outlook a { padding:0;}.es-button { mso-style-priority:100!important; text-decoration:none!important;}a[x-apple-data-detectors] { color:inherit!important; text-decoration:none!important; font-size:inherit!important; font-family:inherit!important; font-weight:inherit!important; line-height:inherit!important;}.es-desk-hidden { display:none; float:left; overflow:hidden; width:0; max-height:0; line-height:0; mso-hide:all;}@media only screen and (max-width:600px) {p, ul li, ol li, a { line-height:150%!important } h1, h2, h3, h1 a, h2 a, h3 a { line-height:120%!important } h1 { font-size:36px!important; text-align:left } h2 { font-size:26px!important; text-align:left } h3 { font-size:20px!important; text-align:left } .es-header-body h1 a, .es-content-body h1 a, .es-footer-body h1 a { font-size:36px!important; text-align:left }\
                  .es-header-body h2 a, .es-content-body h2 a, .es-footer-body h2 a { font-size:26px!important; text-align:left } .es-header-body h3 a, .es-content-body h3 a, .es-footer-body h3 a { font-size:20px!important; text-align:left } .es-menu td a { font-size:12px!important } .es-header-body p, .es-header-body ul li, .es-header-body ol li, .es-header-body a { font-size:14px!important } .es-content-body p, .es-content-body ul li, .es-content-body ol li, .es-content-body a { font-size:14px!important } .es-footer-body p, .es-footer-body ul li, .es-footer-body ol li, .es-footer-body a { font-size:14px!important } .es-infoblock p, .es-infoblock ul li, .es-infoblock ol li, .es-infoblock a { font-size:12px!important } *[class="gmail-fix"] { display:none!important } .es-m-txt-c, .es-m-txt-c h1, .es-m-txt-c h2, .es-m-txt-c h3 { text-align:center!important } .es-m-txt-r, .es-m-txt-r h1, .es-m-txt-r h2, .es-m-txt-r h3 { text-align:right!important }\
                  .es-m-txt-l, .es-m-txt-l h1, .es-m-txt-l h2, .es-m-txt-l h3 { text-align:left!important } .es-m-txt-r img, .es-m-txt-c img, .es-m-txt-l img { display:inline!important } .es-button-border { display:inline-block!important } a.es-button, button.es-button { font-size:20px!important; display:inline-block!important } .es-adaptive table, .es-left, .es-right { width:100%!important } .es-content table, .es-header table, .es-footer table, .es-content, .es-footer, .es-header { width:100%!important; max-width:600px!important } .es-adapt-td { display:block!important; width:100%!important } .adapt-img { width:100%!important; height:auto!important } .es-m-p0 { padding:0!important } .es-m-p0r { padding-right:0!important } .es-m-p0l { padding-left:0!important } .es-m-p0t { padding-top:0!important } .es-m-p0b { padding-bottom:0!important } .es-m-p20b { padding-bottom:20px!important } .es-mobile-hidden, .es-hidden { display:none!important }\
@@ -166,35 +196,32 @@ export async function createManualTicket(data: any) {
                 <td align="left" style="padding:0;Margin:0;padding-top:20px;padding-left:20px;padding-right:20px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" valign="top" style="padding:0;Margin:0;width:560px"><table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;font-size:0px"><img class="adapt-img" src="'+ thumbnailUrl + '" alt style="display:block;border:0;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic" width="560"></td></tr></table></td></tr></table></td></tr> <tr>\
                 <td align="left" style="padding:0;Margin:0;padding-top:10px;padding-left:20px;padding-right:20px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:560px"><table cellpadding="0" cellspacing="0" width="100%" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;border-top:2px solid #efefef;border-bottom:2px solid #efefef" role="presentation"><tr><td align="right" class="es-m-txt-r" style="padding:0;Margin:0;padding-top:10px;padding-bottom:20px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Платено на трета страна</p></td></tr> </table></td></tr></table></td></tr>\
                  <tr><td align="left" style="Margin:0;padding-bottom:10px;padding-top:20px;padding-left:20px;padding-right:20px"> <!--[if mso]><table style="width:560px" cellpadding="0" cellspacing="0"><tr><td style="width:280px" valign="top"><![endif]--><table cellpadding="0" cellspacing="0" class="es-left" align="left" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:left"><tr><td class="es-m-p0r es-m-p20b" align="center" style="padding:0;Margin:0;width:280px"><table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr>\
-                <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Клиент: <strong>'+ customerEmail + '</strong></p> <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Дата на издаване на билет:&nbsp;<strong>' + ticketDate + '</strong></p><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Метод на плащане: <strong>трета страна</strong><strong></strong></p>\
+                <td align="left" style="padding:0;Margin:0"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Клиент: <strong>'+ email + '</strong></p> <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Дата на издаване на билет:&nbsp;<strong>' + ticketDate + '</strong></p><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Метод на плащане: <strong>трета страна</strong><strong></strong></p>\
                 <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Валута:&nbsp;<strong>unknown</strong></p></td></tr></table></td></tr></table> <!--[if mso]></td><td style="width:0px"></td><td style="width:280px" valign="top"><![endif]--><table cellpadding="0" cellspacing="0" class="es-right" align="right" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;float:right"><tr><td class="es-m-p0r" align="center" style="padding:0;Margin:0;width:280px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;display:none"></td></tr></table></td></tr></table> <!--[if mso]></td></tr></table>\
                 <![endif]--></td></tr> <tr><td align="left" style="Margin:0;padding-bottom:10px;padding-top:15px;padding-left:20px;padding-right:20px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="left" style="padding:0;Margin:0;width:560px"><table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">Билетът Ви ще бъде изискан на входа на събитието!</p></td></tr></table></td></tr> </table></td></tr>\
                 </table></td></tr></table> <table cellpadding="0" cellspacing="0" class="es-footer" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%;background-color:transparent;background-repeat:repeat;background-position:center top"><tr><td align="center" style="padding:0;Margin:0"><table class="es-footer-body" align="center" cellpadding="0" cellspacing="0" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:640px" role="none"><tr><td align="left" style="Margin:0;padding-top:20px;padding-bottom:20px;padding-left:20px;padding-right:20px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr>\
                 <td align="left" style="padding:0;Margin:0;width:600px"><table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;padding-bottom:35px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:18px;color:#333333;font-size:12px">Eventify.bg © 2024 Всички права запазени.</p> <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:18px;color:#333333;font-size:12px">ул. Позитано 26, София, България</p></td></tr></table></td></tr></table></td></tr></table></td></tr></table>\
                  <table cellpadding="0" cellspacing="0" class="es-content" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%"><tr><td class="es-info-area" align="center" style="padding:0;Margin:0"><table class="es-content-body" align="center" cellpadding="0" cellspacing="0" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:600px" bgcolor="#FFFFFF" role="none"><tr><td align="left" style="padding:20px;Margin:0"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr>\
                 <td align="center" valign="top" style="padding:0;Margin:0;width:560px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;display:none"></td> </tr></table></td></tr></table></td></tr></table></td></tr></table></td></tr></table></div></body></html>',
-            attachments: [
-                {
-                    filename: 'offline-ticket-qr-code.png',
-                    content: qrCodeBuffer,
-                    contentType: 'image/png'
-                }
-            ]
+        attachments: [
+            {
+                filename: 'offline-ticket-qr-code.png',
+                content: qrCodeBuffer,
+                contentType: 'image/png'
+            }
+        ]
+    });
 
-        });
-
-        console.log("Message sent: %s", info.messageId);
-
-        return { success: true, message: 'Event created successfully', customerUuid, ticketToken };
-
-    } catch (error) {
-        console.error('Error:', error);
-        return { success: false, message: 'Event creation failed' };
-    }
-
+    console.log("Message sent: %s", info.messageId);
 }
 
 export async function deactivateManualTicket(customerUuid: any) {
     await db.delete(eventCustomers).where(eq(eventCustomers.uuid, customerUuid));
+    await db.update(paperTickets)
+        .set({
+            assignedCustomer: null,
+        })
+        //@ts-ignore
+        .where(eq(paperTickets.assignedCustomer, customerUuid));
     return { success: true, message: 'Ticket deactivated successfully!' };
 }

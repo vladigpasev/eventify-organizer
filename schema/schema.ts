@@ -54,6 +54,7 @@ export const eventCustomers = pgTable('eventCustomers', {
   rated: boolean('rated').default(false),
   sentEmail: boolean('sentEmail').default(false),
   isPaperTicket: boolean('isPaperTicket').default(false),
+  paperTicket: varchar('paperTicket', {length: 255}),
 });
 
 export const paperTickets = pgTable('paperTickets', {
@@ -61,6 +62,7 @@ export const paperTickets = pgTable('paperTickets', {
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
   eventUuid: varchar('eventUuid', {length: 100}).notNull(),
   assignedCustomer: varchar('assignedCustomer', {length: 255}),
+  nineDigitCode: varchar('nineDigitCode', {length: 9}).notNull().unique(),
 });
 
 

@@ -1,4 +1,3 @@
-//Copyright (C) 2024  Vladimir Pasev
 "use client"
 
 import React, { useState } from 'react';
@@ -13,6 +12,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
     const router = useRouter();
     const [isModalOpen, setModalOpen] = useState(false);
     const [paperTicketAccessToken, setPaperTicketAccessToken] = useState(null);
+    const [nineDigitCode, setNineDigitCode] = useState(null);
     const [isQrScannerOpen, setQrScannerOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -21,6 +21,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
         if (isAuthenticated) {
             if (isModalOpen) {
                 setPaperTicketAccessToken(null); // Clear paper ticket token when closing the modal
+                setNineDigitCode(null); // Clear nineDigitCode when closing the modal
                 setErrorMessage(''); // Clear error message when closing the modal
             }
             setModalOpen(!isModalOpen);
@@ -37,6 +38,8 @@ function AddCustomer({ eventId, onCustomerAdded }) {
                 const response = await checkPaperToken({ eventUuid: eventId, token: result });
                 if (response.success) {
                     setPaperTicketAccessToken(result);
+                    //@ts-ignore
+                    setNineDigitCode(response.currentCustomer.nineDigitCode); // Set nineDigitCode
                     setQrScannerOpen(false);
                     setErrorMessage('');
                 } else {
@@ -59,6 +62,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
 
     const handleDeletePaperTicket = () => {
         setPaperTicketAccessToken(null);
+        setNineDigitCode(null); // Clear nineDigitCode when deleting the paper ticket
         setErrorMessage('');
     };
 
@@ -76,6 +80,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
                     eventId={eventId}
                     onCustomerAdded={onCustomerAdded}
                     paperTicketAccessToken={paperTicketAccessToken}
+                    nineDigitCode={nineDigitCode} // Pass nineDigitCode to Modal
                     setQrScannerOpen={setQrScannerOpen}
                     handleDeletePaperTicket={handleDeletePaperTicket}
                     errorMessage={errorMessage}
@@ -98,7 +103,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
 }
 
 //@ts-ignore
-function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, setQrScannerOpen, handleDeletePaperTicket, errorMessage, setPaperTicketAccessToken }) {
+function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, nineDigitCode, setQrScannerOpen, handleDeletePaperTicket, errorMessage, setPaperTicketAccessToken }) {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     
@@ -144,9 +149,9 @@ function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, 
                     </div>
                 )}
                 {paperTicketAccessToken ? (
-                    <div className='flex gap-2 mb-5'>
-                        <p>Добавен хартиен билет</p>
-                        <button onClick={handleDeletePaperTicket} className="link text-red-500">Изтрий</button>
+                    <div className='flex flex-row gap-2 mb-5'>
+                        <p>Хартиен билет <strong>#{nineDigitCode}</strong></p>
+                        <button onClick={handleDeletePaperTicket} className="link text-red-500"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" width={10} fill='red'><path d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/></svg></button>
                     </div>
                 ) : (
                     <button onClick={() => setQrScannerOpen(true)} className='btn btn-primary mb-2'>Добави хартиен билет</button>

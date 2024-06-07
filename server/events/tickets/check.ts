@@ -22,18 +22,22 @@ export async function checkTicket(data: any) {
         const ticketToken = validatedData.qrData;
         const decodedTicketToken = await jwt.verify(ticketToken, process.env.JWT_SECRET);
         let customerUuid;
+        let nineDigitCode;
         if (decodedTicketToken.paper) {
             const paperUuid = decodedTicketToken.uuid;
             const currentPaperTicketDb = await db.select({
                 assignedCustomer: paperTickets.assignedCustomer,
+                nineDigitCode: paperTickets.nineDigitCode,
             })
                 .from(paperTickets)
                 .where(eq(paperTickets.uuid, paperUuid))
                 .execute();
             const currentPaperTicket = currentPaperTicketDb[0];
             customerUuid = currentPaperTicket.assignedCustomer;
+            nineDigitCode = currentPaperTicket.nineDigitCode;
         } else {
             customerUuid = decodedTicketToken.uuid;
+            nineDigitCode = undefined;
         }
 
         const currentCustomerDb = await db.select({
@@ -48,11 +52,15 @@ export async function checkTicket(data: any) {
             .where(eq(eventCustomers.uuid, customerUuid))
             .execute();
         const currentCustomer = currentCustomerDb[0];
+        const response = {
+            ...currentCustomer,
+            nineDigitCode,
+        }
 
         if (currentCustomer.eventUuid !== validatedData.eventUuid) {
             return ({ success: false });
         }
-        return ({ success: true, currentCustomer });
+        return ({ success: true, response });
     } catch (err) {
         console.log(err)
         return ({ success: false });

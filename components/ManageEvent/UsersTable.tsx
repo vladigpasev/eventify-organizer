@@ -22,6 +22,7 @@ interface Customer {
     guestCount: number;
     ticketToken: string;
     isEntered: boolean;
+    paperTicket: string;
 }
 
 const UserTable = ({ eventId }: UserTableProps) => {
@@ -37,6 +38,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
         try {
             setIsLoading(true);
             const userResponse = await getUsers(eventId);
+            //@ts-ignore
             setUsers(userResponse);
         } catch (err) {
             console.error('Error fetching users:', err);
@@ -54,7 +56,8 @@ const UserTable = ({ eventId }: UserTableProps) => {
         const filtered = users.filter(user => {
             const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
             return fullName.includes(searchTerm.toLowerCase()) ||
-                user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (user.paperTicket && user.paperTicket.toLowerCase().includes(searchTerm.toLowerCase()));
         });
         setFilteredUsers(filtered);
     }, [searchTerm, users]);
@@ -86,7 +89,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
                     <div className="mb-4">
                         <input
                             type="text"
-                            placeholder="Search users"
+                            placeholder="Търси"
                             className="input border border-gray-200 w-full mb-4"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -103,6 +106,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
                                     <th>Име</th>
                                     <th>Имейл</th>
                                     <th>Брой гости</th>
+                                    <th>Хартиен билет</th>
                                     <th></th>
                                     <th></th>
                                     <th></th>
@@ -122,6 +126,7 @@ const UserTable = ({ eventId }: UserTableProps) => {
                                         </td>
                                         <td>{customer.email}</td>
                                         <td>{customer.guestCount}</td>
+                                        <td>{customer.paperTicket || 'няма'}</td>
                                         <th>
                                             <Link className="btn btn-ghost btn-xs text-black" href={`https://tickets.eventify.bg/` + customer.ticketToken} target='_blank'><svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor' /></svg></Link>
                                         </th>

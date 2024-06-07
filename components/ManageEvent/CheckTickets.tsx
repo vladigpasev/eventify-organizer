@@ -96,7 +96,7 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
 
     const ResultScreen = () => {
         if (scanResult?.success) {
-            const { currentCustomer } = scanResult;
+            const { response: currentCustomer } = scanResult;
 
             const handleExit = async () => {
                 const data = {
@@ -196,8 +196,12 @@ const UserInfo = ({ currentCustomer }) => (
         <p><strong>Име:</strong> {currentCustomer.firstName} {currentCustomer.lastName}</p>
         <p><strong>Имейл:</strong> {currentCustomer.email}</p>
         <p><strong>Брой гости:</strong> {currentCustomer.guestCount}</p>
+        {currentCustomer.nineDigitCode && (
+            <p className="bg-orange-500 text-white p-2 rounded-md mt-2">Хартиен билет<strong> #{currentCustomer.nineDigitCode}</strong></p>
+        )}
     </div>
 );
+
 
 
 export default CheckTicket;

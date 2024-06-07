@@ -53,6 +53,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         guestCount: eventCustomers.guestCount,
         ticketToken: eventCustomers.ticketToken,
         isEntered: eventCustomers.isEntered,
+        paperTicket: eventCustomers.paperTicket,
     })
         .from(eventCustomers)
         .where(and(

@@ -1,0 +1,2 @@
+ALTER TABLE "paperTickets" ADD COLUMN "nineDigitCode" varchar(9) NOT NULL;--> statement-breakpoint
+ALTER TABLE "paperTickets" ADD CONSTRAINT "paperTickets_nineDigitCode_unique" UNIQUE("nineDigitCode");

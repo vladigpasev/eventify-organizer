@@ -24,7 +24,8 @@ export async function checkPaperToken(data: any) {
         const paperUuid = decodedTicketToken.uuid;
         const currentPaperTicketDb = await db.select({
             eventUuid: paperTickets.eventUuid,
-            assignedCustomer: paperTickets.assignedCustomer
+            assignedCustomer: paperTickets.assignedCustomer,
+            nineDigitCode: paperTickets.nineDigitCode,
         })
             .from(paperTickets)
             .where(eq(paperTickets.uuid, paperUuid))
