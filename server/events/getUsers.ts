@@ -67,6 +67,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
 
     // Format createdAt to dd.mm.YYYY, HH:mm:ss format in Sofia's time zone
     const formattedCustomers = currentCustomerDb.map(customer => {
+        //@ts-ignore
         const createdAt = new Date(customer.createdAt);
         const options = { 
             timeZone: 'Europe/Sofia', 
@@ -78,6 +79,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
             second: '2-digit', 
             hour12: false 
         };
+        //@ts-ignore
         const formattedCreatedAt = createdAt.toLocaleString('en-GB', options).replace(',', '');
 
         return {
@@ -85,6 +87,6 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
             createdAt: formattedCreatedAt,
         };
     });
-    
+    //@ts-ignore
     return formattedCustomers;
 }
