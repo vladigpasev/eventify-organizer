@@ -3,7 +3,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { editDescription } from '@/server/events/edit';
 //@ts-ignore
-const EventDescriptionEditor = ({ initialDescription, eventId }) => {
+const EventDescriptionEditor = ({ initialDescription, eventId, isSeller }) => {
+    if(isSeller){
+        return (
+            <div>
+                <label htmlFor="editdescr" className='text-gray-500 font-semibold'>Описание</label>
+                <p className="text-base font-normal mb-4 h-fit mt-2">
+                    {initialDescription}
+                </p>
+            </div>
+        );
+    }
     const [description, setDescription] = useState(initialDescription);
     const [isDescriptionChanged, setIsDescriptionChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

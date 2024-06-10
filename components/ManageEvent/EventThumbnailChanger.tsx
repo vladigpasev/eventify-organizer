@@ -4,7 +4,21 @@ import React, { useState, useEffect, useRef } from 'react';
 import { editThumbnail } from '@/server/events/edit';
 import { UploadButton } from '@/utils/uploadthing';
 //@ts-ignore
-const EventThumbnailChanger = ({ initialThumbnailUrl, eventId }) => {
+const EventThumbnailChanger = ({ initialThumbnailUrl, eventId, isSeller }) => {
+
+    if(isSeller){
+        return(
+            <div>
+                <div className='max-w-xs w-full h-48 overflow-hidden rounded-xl border'>
+                    <img
+                        src={initialThumbnailUrl}
+                        alt='Корица на събитие'
+                        className='w-full h-full object-cover object-center'
+                    />
+                </div>
+            </div>
+        )
+    }
 
     const [thumbnailUrl, setThumbnailUrl] = useState<string>(initialThumbnailUrl);
 

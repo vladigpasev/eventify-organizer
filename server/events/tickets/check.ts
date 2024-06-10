@@ -3,7 +3,7 @@ import { z } from 'zod';
 //@ts-ignore
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eventCustomers, paperTickets } from '../../../schema/schema';
+import { eventCustomers, paperTickets, users } from '../../../schema/schema';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
@@ -47,12 +47,31 @@ export async function checkTicket(data: any) {
             eventUuid: eventCustomers.eventUuid,
             isEntered: eventCustomers.isEntered,
             createdAt: eventCustomers.createdAt,
+            sellerUuid: eventCustomers.sellerUuid,
         })
             .from(eventCustomers)
             .where(eq(eventCustomers.uuid, customerUuid))
             .execute();
         const currentCustomer = currentCustomerDb[0];
-        
+        let sellerName;
+        let sellerEmail;
+        if (currentCustomer.sellerUuid) {
+            const sellerDb = await db.select({
+                firstName: users.firstname,
+                lastName: users.lastname,
+                email: users.email,
+            })
+                .from(users)
+                .where(eq(users.uuid, currentCustomer.sellerUuid))
+                .execute();
+            const seller = sellerDb[0];
+            sellerName = `${seller.firstName} ${seller.lastName}`;
+            sellerEmail = seller.email;
+        } else {
+            sellerName = null;
+            sellerEmail = null;
+        }
+
         // Convert createdAt to dd.mm.YYYY, HH:mm:ss format in Sofia's time zone
         //@ts-ignore
         const createdAt = new Date(currentCustomer.createdAt);
@@ -75,6 +94,8 @@ export async function checkTicket(data: any) {
             ...currentCustomer,
             createdAt: formattedCreatedAt,
             nineDigitCode,
+            sellerName: sellerName,
+            sellerEmail: sellerEmail,
         }
 
         if (currentCustomer.eventUuid !== validatedData.eventUuid) {
@@ -86,8 +107,6 @@ export async function checkTicket(data: any) {
         return ({ success: false });
     }
 }
-
-
 
 
 export async function markAsEntered(data: any) {

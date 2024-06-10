@@ -4,7 +4,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { editLocation } from '@/server/events/edit';
 import { LoadScript, Autocomplete } from '@react-google-maps/api';
 //@ts-ignore
-const LocationChanger = ({ initialLocation, eventId }) => {
+const LocationChanger = ({ initialLocation, eventId, isSeller }) => {
+    if(isSeller){
+        return(
+            <div>
+            <label htmlFor="editDateTime" className='text-gray-500 font-semibold'>Локация</label>
+            <p className="text-base font-normal mb-4 h-fit mt-2">
+                {initialLocation}
+            </p>
+        </div>
+        )
+    }
     const [isLocationChanged, setIsLocationChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");

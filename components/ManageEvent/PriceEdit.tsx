@@ -3,7 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import { editPrice } from '@/server/events/edit';
 //@ts-ignore
-const EventPriceEditor = ({ initialPrice, eventId, isFree }) => {
+const EventPriceEditor = ({ initialPrice, eventId, isFree, isSeller }) => {
+    if (isSeller) {
+        return (
+            <div>
+                <label htmlFor="price" className='text-gray-500 font-semibold'>Цена</label>
+                <p className="text-base font-normal mb-4 h-fit mt-2">
+                    {isFree ? "Безплатно" : initialPrice} лв.
+                </p>
+            </div>
+        );
+    }
     const [price, setPrice] = useState(initialPrice);
     const [isPriceChanged, setIsPriceChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

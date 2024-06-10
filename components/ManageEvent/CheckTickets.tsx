@@ -196,6 +196,7 @@ const UserInfo = ({ currentCustomer }) => (
     <p><strong>Име:</strong> {currentCustomer.firstName} {currentCustomer.lastName}</p>
     <p><strong>Имейл:</strong> {currentCustomer.email}</p>
     <p><strong>Брой гости:</strong> {currentCustomer.guestCount}</p>
+    <p><strong>Име на продавач:</strong> {currentCustomer.sellerName} ({currentCustomer.sellerEmail})</p>
     <p><strong>Създаден на:</strong> {currentCustomer.createdAt}</p>
     {currentCustomer.nineDigitCode && (
       <p className="bg-orange-500 text-white p-2 rounded-md mt-2">Хартиен билет<strong> #{currentCustomer.nineDigitCode}</strong></p>

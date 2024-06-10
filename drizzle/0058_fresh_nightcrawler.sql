@@ -1,0 +1,1 @@
+ALTER TABLE "eventCustomers" ADD COLUMN "sellerUuid" varchar(100);

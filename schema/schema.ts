@@ -39,6 +39,13 @@ export const events = pgTable('events', {
   updatedAt: timestamp('updated_at').default(`now()`),
 });
 
+export const sellers = pgTable('sellers', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
+  sellerEmail: varchar('sellerEmail', { length: 255 }).notNull(),
+  eventUuid: varchar('eventUuid', { length: 255 }).notNull(),
+});
+
 export const eventCustomers = pgTable('eventCustomers', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
@@ -56,6 +63,7 @@ export const eventCustomers = pgTable('eventCustomers', {
   isPaperTicket: boolean('isPaperTicket').default(false),
   paperTicket: varchar('paperTicket', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow(), // Added createdAt field
+  sellerUuid: varchar('sellerUuid', { length: 100 }),
 });
 
 export const paperTickets = pgTable('paperTickets', {

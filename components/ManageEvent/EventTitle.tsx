@@ -4,7 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { editTitle } from '@/server/events/edit';
 
 //@ts-ignore
-const EventTitleEditor = ({ initialTitle, eventId }) => {
+const EventTitleEditor = ({ initialTitle, eventId, isSeller }) => {
+    if(isSeller){
+        return (
+            <div>
+                <h1 className="text-2xl font-bold mb-4 text-black">
+                    {initialTitle}
+                </h1>
+            </div>
+        )
+    }
     const [title, setTitle] = useState(initialTitle);
     const [isTitleChanged, setIsTitleChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

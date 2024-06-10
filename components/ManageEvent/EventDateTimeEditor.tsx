@@ -4,7 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { editDateTime } from '@/server/events/edit';
 
 //@ts-ignore
-const EventDateTimeEditor = ({ initialDateTime, eventId }) => {
+const EventDateTimeEditor = ({ initialDateTime, eventId, isSeller }) => {
+    if(isSeller){
+        return (
+            <div className='pt-2'>
+                <label htmlFor="editDateTime" className='text-gray-500 font-semibold '>Дата и час</label>
+                <p className="text-base font-normal mb-4 h-fit mt-2">
+                    {new Date(initialDateTime).toLocaleString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                </p>
+            </div>
+        )
+    }
     const [dateTime, setDateTime] = useState(initialDateTime);
     const [isDateTimeChanged, setIsDateTimeChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

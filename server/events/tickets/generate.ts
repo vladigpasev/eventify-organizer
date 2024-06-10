@@ -35,6 +35,7 @@ export async function createManualTicket(data: any) {
         guestsCount: z.any(),
         eventUuid: z.string().nonempty(),
         paperTicketAccessToken: z.any(),
+        sellerUuid: z.string().nonempty(),
     });
 
     try {
@@ -47,6 +48,7 @@ export async function createManualTicket(data: any) {
             email: validatedData.email,
             guestCount: validatedData.guestsCount,
             eventUuid: validatedData.eventUuid,
+            sellerUuid: validatedData.sellerUuid,
         }).returning({ uuid: eventCustomers.uuid }).execute();
 
         // The first element of the array is the inserted row

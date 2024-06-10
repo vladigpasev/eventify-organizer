@@ -4,7 +4,23 @@ import React, { useState } from 'react';
 import { changeVisibility } from '@/server/events/edit';
 
 //@ts-ignore
-const PublicPrivateToggle = ({ initialVisibility, eventId }) => {
+const PublicPrivateToggle = ({ initialVisibility, eventId, isSeller }) => {
+    if(isSeller){
+        return (
+            <div>
+                <label htmlFor="visibilityToggle" className='text-gray-500 font-semibold'>Тип събитите</label>
+                <select
+                    id="visibilityToggle"
+                    value={initialVisibility}
+                    className="input input-bordered w-full border-b-2 p-2 my-3"
+                    disabled
+                >
+                    <option value="public">Публично</option>
+                    <option value="private">Частно</option>
+                </select>
+            </div>
+        );
+    }
     const [visibility, setVisibility] = useState(initialVisibility);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");

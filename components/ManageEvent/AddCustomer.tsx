@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { QrScanner } from '@yudiel/react-qr-scanner';
 
 //@ts-ignore
-function AddCustomer({ eventId, onCustomerAdded }) {
+function AddCustomer({ eventId, onCustomerAdded, userUuid }) {
     const router = useRouter();
     const [isModalOpen, setModalOpen] = useState(false);
     const [paperTicketAccessToken, setPaperTicketAccessToken] = useState(null);
@@ -85,6 +85,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
                     handleDeletePaperTicket={handleDeletePaperTicket}
                     errorMessage={errorMessage}
                     setPaperTicketAccessToken={setPaperTicketAccessToken}
+                    userUuid={userUuid}
                 />
             )}
             {isQrScannerOpen && (
@@ -103,7 +104,7 @@ function AddCustomer({ eventId, onCustomerAdded }) {
 }
 
 //@ts-ignore
-function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, nineDigitCode, setQrScannerOpen, handleDeletePaperTicket, errorMessage, setPaperTicketAccessToken }) {
+function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, nineDigitCode, setQrScannerOpen, handleDeletePaperTicket, errorMessage, setPaperTicketAccessToken, userUuid }) {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     
@@ -118,7 +119,8 @@ function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, 
             email: event.target.email.value,
             guestsCount: event.target.guests_count.value,
             eventUuid: eventId,
-            paperTicketAccessToken: paperTicketAccessToken
+            paperTicketAccessToken: paperTicketAccessToken,
+            sellerUuid: userUuid,
         };
 
         try {
