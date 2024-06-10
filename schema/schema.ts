@@ -28,13 +28,13 @@ export const events = pgTable('events', {
   category: varchar('category', { length: 50 }).notNull(),
   description: text('description').notNull(),
   thumbnailUrl: varchar('thumbnailUrl', { length: 100 }).notNull(),
-  location: varchar('location', {length: 100}).notNull(),
-  eventCoordinates: varchar('eventCoordinates', {length: 100}),
+  location: varchar('location', { length: 100 }).notNull(),
+  eventCoordinates: varchar('eventCoordinates', { length: 100 }),
   isFree: boolean('isFree').default(false),
   price: numeric('price', { precision: 10, scale: 2 }),
-  userUuid: varchar('userUuid', {length: 100}).notNull(),
-  dateTime: varchar('dateTime', {length: 100}).notNull(),
-  visibility: varchar('visibility', {length: 100}).notNull().default("public"),
+  userUuid: varchar('userUuid', { length: 100 }).notNull(),
+  dateTime: varchar('dateTime', { length: 100 }).notNull(),
+  visibility: varchar('visibility', { length: 100 }).notNull().default("public"),
   //@ts-ignore
   updatedAt: timestamp('updated_at').default(`now()`),
 });
@@ -46,23 +46,24 @@ export const eventCustomers = pgTable('eventCustomers', {
   lastname: varchar('lastname', { length: 50 }).notNull(),
   email: varchar('email', { length: 100 }).notNull(),
   guestCount: numeric('guestCount').notNull().default('1'),
-  eventUuid: varchar('eventUuid', {length: 100}).notNull(),
-  ticketToken: varchar('ticketToken', {length: 255}), // New field for the ticket token
+  eventUuid: varchar('eventUuid', { length: 100 }).notNull(),
+  ticketToken: varchar('ticketToken', { length: 255 }), // New field for the ticket token
   isEntered: boolean('isEntered').default(false),
   clerkUserId: varchar('clerkUserId', { length: 100 }),
   hidden: boolean('hidden').default(false),
   rated: boolean('rated').default(false),
   sentEmail: boolean('sentEmail').default(false),
   isPaperTicket: boolean('isPaperTicket').default(false),
-  paperTicket: varchar('paperTicket', {length: 255}),
+  paperTicket: varchar('paperTicket', { length: 255 }),
+  createdAt: timestamp('created_at').defaultNow(), // Added createdAt field
 });
 
 export const paperTickets = pgTable('paperTickets', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
-  eventUuid: varchar('eventUuid', {length: 100}).notNull(),
-  assignedCustomer: varchar('assignedCustomer', {length: 255}),
-  nineDigitCode: varchar('nineDigitCode', {length: 9}).notNull().unique(),
+  eventUuid: varchar('eventUuid', { length: 100 }).notNull(),
+  assignedCustomer: varchar('assignedCustomer', { length: 255 }),
+  nineDigitCode: varchar('nineDigitCode', { length: 9 }).notNull().unique(),
 });
 
 
@@ -70,18 +71,18 @@ export const comments = pgTable('comments', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
   commentText: text('comment_text').notNull(),
-  eventId: uuid('event_id').notNull(), 
-  userName: varchar('userName', {length: 100}),
+  eventId: uuid('event_id').notNull(),
+  userName: varchar('userName', { length: 100 }),
   //@ts-ignore
-  createdAt: timestamp('created_at').default(`now()`), 
+  createdAt: timestamp('created_at').default(`now()`),
   //@ts-ignore
-  updatedAt: timestamp('updated_at').default(`now()`), 
+  updatedAt: timestamp('updated_at').default(`now()`),
 });
 
 export const ratings = pgTable('ratings', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
-  ticketToken: varchar('ticketToken', {length: 255}).notNull().unique(), 
+  ticketToken: varchar('ticketToken', { length: 255 }).notNull().unique(),
   rating: numeric('rating'),
   feedback: text('feedback'),
 });

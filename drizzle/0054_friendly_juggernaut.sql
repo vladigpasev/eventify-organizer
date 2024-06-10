@@ -1,0 +1,1 @@
+ALTER TABLE "eventCustomers" DROP COLUMN IF EXISTS "created_at";

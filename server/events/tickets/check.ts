@@ -1,4 +1,3 @@
-//Copyright (C) 2024  Vladimir Pasev
 'use server';
 import { z } from 'zod';
 //@ts-ignore
@@ -47,13 +46,34 @@ export async function checkTicket(data: any) {
             guestCount: eventCustomers.guestCount,
             eventUuid: eventCustomers.eventUuid,
             isEntered: eventCustomers.isEntered,
+            createdAt: eventCustomers.createdAt,
         })
             .from(eventCustomers)
             .where(eq(eventCustomers.uuid, customerUuid))
             .execute();
         const currentCustomer = currentCustomerDb[0];
+        
+        // Convert createdAt to dd.mm.YYYY, HH:mm:ss format in Sofia's time zone
+        //@ts-ignore
+        const createdAt = new Date(currentCustomer.createdAt);
+        const sofiaTimeOptions = {
+            timeZone: 'Europe/Sofia',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        };
+        //@ts-ignore
+        const sofiaTimeFormatter = new Intl.DateTimeFormat('en-GB', sofiaTimeOptions);
+        const parts = sofiaTimeFormatter.formatToParts(createdAt);
+        const formattedCreatedAt = `${parts[0].value}.${parts[2].value}.${parts[4].value}, ${parts[6].value}:${parts[8].value}:${parts[10].value}`;
+
         const response = {
             ...currentCustomer,
+            createdAt: formattedCreatedAt,
             nineDigitCode,
         }
 
@@ -64,9 +84,10 @@ export async function checkTicket(data: any) {
     } catch (err) {
         console.log(err)
         return ({ success: false });
-
     }
 }
+
+
 
 
 export async function markAsEntered(data: any) {

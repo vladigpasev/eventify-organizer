@@ -17,6 +17,7 @@ interface Customer {
     guestCount: number;
     ticketToken: string;
     isEntered: boolean;
+    createdAt: string;
 }
 
 export async function getUsers(eventUuid: string): Promise<Customer[]> {
@@ -54,6 +55,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         ticketToken: eventCustomers.ticketToken,
         isEntered: eventCustomers.isEntered,
         paperTicket: eventCustomers.paperTicket,
+        createdAt: eventCustomers.createdAt,
     })
         .from(eventCustomers)
         .where(and(
@@ -62,6 +64,27 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         ))
         .orderBy(eventCustomers.firstname)
         .execute();
-    //@ts-ignore
-    return currentCustomerDb;
+
+    // Format createdAt to dd.mm.YYYY, HH:mm:ss format in Sofia's time zone
+    const formattedCustomers = currentCustomerDb.map(customer => {
+        const createdAt = new Date(customer.createdAt);
+        const options = { 
+            timeZone: 'Europe/Sofia', 
+            year: 'numeric', 
+            month: '2-digit', 
+            day: '2-digit', 
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            hour12: false 
+        };
+        const formattedCreatedAt = createdAt.toLocaleString('en-GB', options).replace(',', '');
+
+        return {
+            ...customer,
+            createdAt: formattedCreatedAt,
+        };
+    });
+    
+    return formattedCustomers;
 }
