@@ -414,6 +414,41 @@
       "when": 1718050903645,
       "tag": "0058_fresh_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "5",
+      "when": 1718105385221,
+      "tag": "0059_sad_expediter",
+      "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "5",
+      "when": 1718105720851,
+      "tag": "0060_mysterious_the_twelve",
+      "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "5",
+      "when": 1718105772899,
+      "tag": "0061_mysterious_marvel_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1718105795899,
+      "tag": "0062_cool_big_bertha",
+      "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "5",
+      "when": 1718105805774,
+      "tag": "0063_tidy_fabian_cortez",
+      "breakpoints": true
     }
   ]
 }

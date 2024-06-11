@@ -1,0 +1,1 @@
+ALTER TABLE "events" ALTER COLUMN "limit" SET DATA TYPE numeric;

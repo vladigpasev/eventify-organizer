@@ -7,6 +7,7 @@ import { getUsers } from '@/server/events/getUsers';
 import AddCustomer from './AddCustomer';
 import CheckTicket from './CheckTickets';
 import SendEmailToAll from './SendEmailToAll';
+import { getCurrentLimit, changeLimit } from '@/server/events/limit'; // Import the necessary functions
 
 export const maxDuration = 300;
 
@@ -37,6 +38,9 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [limit, setLimit] = useState<string | null>(null);
+  const [limitLoading, setLimitLoading] = useState<boolean>(false);
+  const [isLimitChanged, setIsLimitChanged] = useState<boolean>(false);
 
   const enteredCount = users.filter(user => user.isEntered).length;
 
@@ -54,8 +58,35 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     }
   };
 
+  const fetchLimit = async () => {
+    try {
+      const currentLimit = await getCurrentLimit({ eventUuid: eventId });
+      setLimit(currentLimit.limit || '');
+    } catch (err) {
+      console.error('Error fetching limit:', err);
+    }
+  };
+
+  const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLimit(e.target.value);
+    setIsLimitChanged(true);
+  };
+
+  const handleLimitSubmit = async () => {
+    setLimitLoading(true);
+    try {
+      await changeLimit({ limit: limit, eventUuid: eventId });
+      setIsLimitChanged(false);
+    } catch (err) {
+      console.error('Error changing limit:', err);
+    } finally {
+      setLimitLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchLimit();
   }, [eventId]);
 
   useEffect(() => {
@@ -78,7 +109,32 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
           <AddCustomer eventId={eventId} onCustomerAdded={fetchUsers} userUuid={userUuid} />
           <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers} />
         </div>
+
       </div>
+      {isSeller && (<>
+       <div className='pb-5'><strong >Лимит на билетите: {limit || 'няма'}</strong></div>
+      </>) || <>
+        <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
+          <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Лимит на билетите (оставете празно, ако няма):</label>
+          <input
+            type="number"
+            id="limit-input"
+            aria-describedby="helper-text-explanation"
+            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+            placeholder="Няма лимит"
+            min={0}
+            value={limit || ''}
+            onChange={handleLimitChange}
+          />
+          <button
+            type="submit"
+            className="btn btn-primary mt-2"
+            disabled={!isLimitChanged || limitLoading}
+          >
+            {limitLoading ? 'Зареждане...' : 'Промени лимита'}
+          </button>
+        </form>
+      </>}
       {isLoading ? <>Зареждане...</> :
         <>
           {isSeller && (<></>) || <>

@@ -1,4 +1,3 @@
-//Copyright (C) 2024  Vladimir Pasev
 'use server';
 import { z } from 'zod';
 //@ts-ignore
@@ -40,6 +39,30 @@ export async function createManualTicket(data: any) {
 
     try {
         const validatedData = ticketSchema.parse(data);
+
+        // Fetch current number of tickets and event limit
+        const eventInfo = await db.select({
+            limit: events.limit,
+        })
+            .from(events)
+            .where(eq(events.uuid, validatedData.eventUuid))
+            .execute();
+
+        const currentEvent = eventInfo[0];
+
+        // Fetch the current count of tickets for the event
+        const ticketCount = await db.select()
+            .from(eventCustomers)
+            .where(eq(eventCustomers.eventUuid, validatedData.eventUuid))
+            .execute();
+
+        const currentTicketCount = ticketCount.length;
+
+        // Check if the event limit is exceeded
+        //@ts-ignore
+        if (currentEvent.limit !== null && currentTicketCount >= currentEvent.limit) {
+            return { success: false, message: 'Лимитът на билетите е достигнат!' };
+        }
 
         // Insert the data into the database and retrieve the uuid
         const insertResult = await db.insert(eventCustomers).values({
@@ -110,7 +133,6 @@ export async function createManualTicket(data: any) {
                 }
             })();
         }
-
         const eventDataPromise = db.select({
             eventName: events.eventName,
             thumbnailUrl: events.thumbnailUrl,
@@ -131,7 +153,6 @@ export async function createManualTicket(data: any) {
             ticketToken,
             thumbnailUrl: eventData.thumbnailUrl,
         });
-
         return { success: true, message: 'Event created successfully', customerUuid, ticketToken };
 
     } catch (error) {

@@ -106,12 +106,14 @@ function AddCustomer({ eventId, onCustomerAdded, userUuid }) {
 //@ts-ignore
 function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, nineDigitCode, setQrScannerOpen, handleDeletePaperTicket, errorMessage, setPaperTicketAccessToken, userUuid }) {
     const [isLoading, setIsLoading] = useState(false);
+    const [formError, setFormError] = useState('');
     const router = useRouter();
     
     //@ts-ignore
     const handleSubmit = async (event) => {
         event.preventDefault();
         setIsLoading(true);
+        setFormError('');
 
         const formData = {
             firstname: event.target.name.value,
@@ -130,7 +132,11 @@ function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, 
                 router.refresh();
                 throw "Сесията ти е изтекла. Моля презареди страницата, за да влезеш в акаунта си отново.";
             }
-            await createManualTicket(formData);
+            const response = await createManualTicket(formData);
+            if (!response.success) {
+                setFormError(response.message);
+                throw new Error(response.message);
+            }
             setPaperTicketAccessToken(null); // Clear the paper ticket token on successful submission
             toggleModal();
             onCustomerAdded();
@@ -145,6 +151,11 @@ function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center px-4 z-50">
             <div className="bg-white p-6 rounded-lg max-w-lg w-full">
                 <h2 className="text-xl mb-4 font-bold">Създай билет</h2>
+                {formError && (
+                    <div className="text-red-500 mb-2">
+                        {formError}
+                    </div>
+                )}
                 {errorMessage && (
                     <div className="text-red-500 mb-2">
                         {errorMessage}

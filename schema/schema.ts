@@ -37,6 +37,7 @@ export const events = pgTable('events', {
   visibility: varchar('visibility', { length: 100 }).notNull().default("public"),
   //@ts-ignore
   updatedAt: timestamp('updated_at').default(`now()`),
+  limit: numeric('limit'),
 });
 
 export const sellers = pgTable('sellers', {
