@@ -180,6 +180,7 @@ export async function getSellers(data: any) {
             if (userInfo) {
                 const ticketsSoldDb = await db.select()
                     .from(eventCustomers)
+                    //@ts-ignore
                     .where(eq(eventCustomers.sellerUuid, userInfo.uuid))
                     .execute();
 
