@@ -1,19 +1,8 @@
-//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import React, { useState, useEffect } from 'react';
 import { editTitle } from '@/server/events/edit';
-
 //@ts-ignore
 const EventTitleEditor = ({ initialTitle, eventId, isSeller }) => {
-    if(isSeller){
-        return (
-            <div>
-                <h1 className="text-2xl font-bold mb-4 text-black">
-                    {initialTitle}
-                </h1>
-            </div>
-        )
-    }
     const [title, setTitle] = useState(initialTitle);
     const [isTitleChanged, setIsTitleChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -22,20 +11,19 @@ const EventTitleEditor = ({ initialTitle, eventId, isSeller }) => {
     useEffect(() => {
         setIsTitleChanged(title !== initialTitle);
     }, [title, initialTitle]);
-    //@ts-ignore
+//@ts-ignore
     const handleTitleChange = (e) => {
         if (e.target.value.length <= 20) {
             setTitle(e.target.value);
-            setError("")
+            setError("");
         }
     };
 
     const handleSaveTitle = async () => {
         if (title.length < 3) {
             setError("Заглавието трябва да бъде по-дълго от 3 символа!");
-        };
+        }
         if (!isTitleChanged || title.length < 3) return;
-
 
         setIsLoading(true);
         try {
@@ -54,29 +42,39 @@ const EventTitleEditor = ({ initialTitle, eventId, isSeller }) => {
 
     return (
         <div>
-            {error && <p className="text-red-500">{error}</p>} 
-            <h1 className="text-2xl font-bold mb-4 text-black">
-                <input
-                    type="text"
-                    value={title}
-                    onChange={handleTitleChange}
-                    className='focus:input focus:input-bordered w-full border-b-2'
-                    required
-                    minLength={3}
-                    maxLength={20} // Set the maximum length of the input
-                />
-            </h1>
-            <p className='text-gray-400'>
-                {title.length}/20 символа
-            </p>
-            <button
-                className="btn btn-primary mb-10"
-                onClick={handleSaveTitle}
-                type='submit'
-                disabled={!isTitleChanged || isLoading}
-            >
-                {isLoading ? 'Зареждане...' : 'Запази заглавие'}
-            </button>
+            {isSeller ? (
+                <div>
+                    <h1 className="text-2xl font-bold mb-4 text-black">
+                        {initialTitle}
+                    </h1>
+                </div>
+            ) : (
+                <>
+                    {error && <p className="text-red-500">{error}</p>}
+                    <h1 className="text-2xl font-bold mb-4 text-black">
+                        <input
+                            type="text"
+                            value={title}
+                            onChange={handleTitleChange}
+                            className='focus:input focus:input-bordered w-full border-b-2'
+                            required
+                            minLength={3}
+                            maxLength={20} // Set the maximum length of the input
+                        />
+                    </h1>
+                    <p className='text-gray-400'>
+                        {title.length}/20 символа
+                    </p>
+                    <button
+                        className="btn btn-primary mb-10"
+                        onClick={handleSaveTitle}
+                        type='submit'
+                        disabled={!isTitleChanged || isLoading}
+                    >
+                        {isLoading ? 'Зареждане...' : 'Запази заглавие'}
+                    </button>
+                </>
+            )}
         </div>
     );
 };

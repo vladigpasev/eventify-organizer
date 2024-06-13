@@ -1,25 +1,9 @@
-//Copyright (C) 2024  Vladimir Pasev
 "use client"
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { editThumbnail } from '@/server/events/edit';
 import { UploadButton } from '@/utils/uploadthing';
 //@ts-ignore
 const EventThumbnailChanger = ({ initialThumbnailUrl, eventId, isSeller }) => {
-
-    if(isSeller){
-        return(
-            <div>
-                <div className='max-w-xs w-full h-48 overflow-hidden rounded-xl border'>
-                    <img
-                        src={initialThumbnailUrl}
-                        alt='Корица на събитие'
-                        className='w-full h-full object-cover object-center'
-                    />
-                </div>
-            </div>
-        )
-    }
-
     const [thumbnailUrl, setThumbnailUrl] = useState<string>(initialThumbnailUrl);
 
     const handleUploadComplete = async (res: any) => {
@@ -30,7 +14,7 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId, isSeller }) => {
             const response = await editThumbnail({ uuid: eventId, thumbnailUrl });
 
             if (response.success) {
-                alert("Корицата е запазена успешно!")
+                alert("Корицата е запазена успешно!");
             }
         } catch (error) {
             console.log(error);
@@ -43,15 +27,25 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId, isSeller }) => {
 
     return (
         <div className='mb-5'>
-            <div className='flex flex-col items-center justify-center w-fit'>
-               
-            <div className='max-w-xs w-full h-48 overflow-hidden rounded-xl border'>
-                    <img
-                        src={thumbnailUrl}
-                        alt='Корица на събитие'
-                        className='w-full h-full object-cover object-center'
-                    />
+            {isSeller ? (
+                <div>
+                    <div className='max-w-xs w-full h-48 overflow-hidden rounded-xl border'>
+                        <img
+                            src={initialThumbnailUrl}
+                            alt='Корица на събитие'
+                            className='w-full h-full object-cover object-center'
+                        />
+                    </div>
                 </div>
+            ) : (
+                <div className='flex flex-col items-center justify-center w-fit'>
+                    <div className='max-w-xs w-full h-48 overflow-hidden rounded-xl border'>
+                        <img
+                            src={thumbnailUrl}
+                            alt='Корица на събитие'
+                            className='w-full h-full object-cover object-center'
+                        />
+                    </div>
                     <div className='w-full'>
                         <UploadButton
                             endpoint='imageUploader'
@@ -73,8 +67,9 @@ const EventThumbnailChanger = ({ initialThumbnailUrl, eventId, isSeller }) => {
                                 }
                             }}
                         />
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

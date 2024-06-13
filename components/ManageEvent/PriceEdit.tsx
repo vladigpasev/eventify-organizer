@@ -1,19 +1,8 @@
-//Copyright (C) 2024  Vladimir Pasev
 "use client"
 import React, { useState, useEffect } from 'react';
 import { editPrice } from '@/server/events/edit';
 //@ts-ignore
 const EventPriceEditor = ({ initialPrice, eventId, isFree, isSeller }) => {
-    if (isSeller) {
-        return (
-            <div>
-                <label htmlFor="price" className='text-gray-500 font-semibold'>Цена</label>
-                <p className="text-base font-normal mb-4 h-fit mt-2">
-                    {isFree ? "Безплатно" : initialPrice} лв.
-                </p>
-            </div>
-        );
-    }
     const [price, setPrice] = useState(initialPrice);
     const [isPriceChanged, setIsPriceChanged] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -51,50 +40,60 @@ const EventPriceEditor = ({ initialPrice, eventId, isFree, isSeller }) => {
 
     return (
         <div>
-            {error && <p className="text-red-500">{error}</p>}
-            <label htmlFor="" className='text-gray-500 font-semibold'>Цена*</label>
-            <div className=''>
-                <div className="mb-4">
-                    {/* Free event selector */}
-                    <label className="block text-gray-700 text-sm font-bold mb-2">
-                        Това събитие безплатно ли е?
-                    </label>
-                    <select
-                        id="isFree"
-                        value={isFreeEvent ? "true" : "false"}
-                        onChange={(e) => setIsFreeEvent(e.target.value === "true")}
-                        className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
-                    >
-                        <option value="true">Да</option>
-                        <option value="false">Не</option>
-                    </select>
+            {isSeller ? (
+                <div>
+                    <label htmlFor="price" className='text-gray-500 font-semibold'>Цена</label>
+                    <p className="text-base font-normal mb-4 h-fit mt-2">
+                        {isFree ? "Безплатно" : `${initialPrice} лв.`}
+                    </p>
                 </div>
-                {!isFreeEvent && (
-                    <div className="mb-4">
-                        <label htmlFor="price" className="block text-gray-700 text-sm font-bold mb-2">
-                            Цена (лв.)
-                        </label>
-                        <input
-                            id="price"
-                            type="number"
-                            value={price}
-                            onChange={handlePriceChange}
-                            className="focus:input focus:input-bordered w-full border-b-2"
-                            placeholder="Enter event price"
-                            min="0"
-                            step="0.01"
-                        />
+            ) : (
+                <>
+                    {error && <p className="text-red-500">{error}</p>}
+                    <label htmlFor="price" className='text-gray-500 font-semibold'>Цена*</label>
+                    <div className=''>
+                        <div className="mb-4">
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Това събитие безплатно ли е?
+                            </label>
+                            <select
+                                id="isFree"
+                                value={isFreeEvent ? "true" : "false"}
+                                onChange={(e) => setIsFreeEvent(e.target.value === "true")}
+                                className="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5"
+                            >
+                                <option value="true">Да</option>
+                                <option value="false">Не</option>
+                            </select>
+                        </div>
+                        {!isFreeEvent && (
+                            <div className="mb-4">
+                                <label htmlFor="price" className="block text-gray-700 text-sm font-bold mb-2">
+                                    Цена (лв.)
+                                </label>
+                                <input
+                                    id="price"
+                                    type="number"
+                                    value={price}
+                                    onChange={handlePriceChange}
+                                    className="focus:input focus:input-bordered w-full border-b-2"
+                                    placeholder="Enter event price"
+                                    min="0"
+                                    step="0.01"
+                                />
+                            </div>
+                        )}
                     </div>
-                )}
-            </div>
-            <button
-                className="btn btn-primary mb-10"
-                onClick={handleSave}
-                type='submit'
-                disabled={!isPriceChanged || isLoading}
-            >
-                {isLoading ? 'Зареждане...' : 'Редактирай цена'}
-            </button>
+                    <button
+                        className="btn btn-primary mb-10"
+                        onClick={handleSave}
+                        type='submit'
+                        disabled={!isPriceChanged || isLoading}
+                    >
+                        {isLoading ? 'Зареждане...' : 'Редактирай цена'}
+                    </button>
+                </>
+            )}
         </div>
     );
 };
