@@ -123,3 +123,88 @@ export async function addSeller(data:any) {
     }
 
 }
+
+export async function getSellers(data: any) {
+    // Define a schema for event data validation
+    const eventSellerSchema = z.object({
+        eventUuid: z.string().nonempty(),
+    });
+
+    try {
+        const validatedData = eventSellerSchema.parse(data);
+        const token = cookies().get("token")?.value;
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const userUuid = decodedToken.uuid;
+
+        const currentEventDb = await db.select({
+            eventName: events.eventName,
+            userUuid: events.userUuid,
+            price: events.price,
+        })
+            .from(events)
+            .where(eq(events.uuid, validatedData.eventUuid))
+            .execute();
+        const currentEvent = currentEventDb[0];
+
+        if (!currentEvent) {
+            return { success: false, message: 'Event not found' };
+        }
+
+        if (currentEvent.userUuid !== userUuid) {
+            return { success: false, message: 'Не сте създател на това събитие!' };
+        }
+
+        const eventPrice = currentEvent.price ? parseFloat(currentEvent.price) : 0;
+
+        // Check if the seller already exists for this event
+        const getSellers = await db.select({
+            sellerEmail: sellers.sellerEmail,
+        })
+            .from(sellers)
+            .where(eq(sellers.eventUuid, validatedData.eventUuid))
+            .execute();
+
+        // Join with users table to get first name, last name, seller UUID, tickets sold, and calculate price owed
+        const sellersWithUserInfo = await Promise.all(getSellers.map(async (seller: any) => {
+            const userInfoDb = await db.select({
+                uuid: users.uuid,
+                firstname: users.firstname,
+                lastname: users.lastname,
+            })
+                .from(users)
+                .where(eq(users.email, seller.sellerEmail))
+                .execute();
+
+            const userInfo = userInfoDb[0];
+
+            if (userInfo) {
+                const ticketsSoldDb = await db.select()
+                    .from(eventCustomers)
+                    .where(eq(eventCustomers.sellerUuid, userInfo.uuid))
+                    .execute();
+
+                const ticketsSold = ticketsSoldDb.length;
+                const priceOwed = ticketsSold * eventPrice;
+
+                return {
+                    sellerEmail: seller.sellerEmail,
+                    firstname: userInfo.firstname,
+                    lastname: userInfo.lastname,
+                    ticketsSold: ticketsSold,
+                    priceOwed: priceOwed,
+                    unregistered: false,
+                };
+            } else {
+                return {
+                    sellerEmail: seller.sellerEmail,
+                    unregistered: true,
+                };
+            }
+        }));
+
+        return { success: true, sellers: sellersWithUserInfo };
+    } catch (error) {
+        console.log(error);
+        return { success: false };
+    }
+}

@@ -1,25 +1,50 @@
-"use client"
-import React, { useState } from 'react';
-import { addSeller } from '@/server/sellers/actions';
+"use client";
+import React, { useState, useEffect } from 'react';
+import { addSeller, getSellers } from '@/server/sellers/actions';
 //@ts-ignore
 function SellTickets({ eventUuid, isSeller }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  //@ts-ignore
+  const [sellers, setSellers] = useState([]);
+
+  useEffect(() => {
+    const fetchSellers = async () => {
+      try {
+        const response = await getSellers({ eventUuid });
+        if (response.success) {
+          //@ts-ignore
+          setSellers(response.sellers);
+        } else {
+          //@ts-ignore
+          setError(response.message);
+        }
+      } catch (error) {
+        setError('An error occurred while fetching the sellers.');
+      }
+    };
+
+    fetchSellers();
+  }, [eventUuid]);
+//@ts-ignore
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const response = await addSeller({ email, eventUuid: eventUuid });
+      const response = await addSeller({ email, eventUuid });
       if (!response.success) {
         //@ts-ignore
         setError(response.message);
       } else {
         setEmail('');
-
+        // Refresh the sellers list after adding a new seller
+        const updatedSellers = await getSellers({ eventUuid });
+        if (updatedSellers.success) {
+          //@ts-ignore
+          setSellers(updatedSellers.sellers);
+        }
       }
     } catch (error) {
       setError('An error occurred while adding the seller.');
@@ -30,8 +55,7 @@ function SellTickets({ eventUuid, isSeller }) {
 
   return (
     <div>
-
-      {isSeller && (<></>) || <>
+      {!isSeller && (
         <form onSubmit={handleSubmit}>
           <label htmlFor="email" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">
             Въведи имейл
@@ -67,9 +91,50 @@ function SellTickets({ eventUuid, isSeller }) {
           </div>
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </form>
-      </>}
-      <div>
-        
+      )}
+      <div className="mt-4">
+        {sellers.length > 0 ? (
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Имейл
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Продадени билети
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Дължима сума
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {sellers
+              //@ts-ignore
+                .sort((a, b) => b.ticketsSold - a.ticketsSold)
+                .map((seller) => (
+                  //@ts-ignore
+                  <tr key={seller.sellerEmail}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {
+                      //@ts-ignore
+                      seller.sellerEmail} ({seller.firstname ? <>{seller.firstname} {seller.lastname}</> : <>нерегистриран</>})
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
+                    //@ts-ignore
+                    seller.ticketsSold || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {
+                      //@ts-ignore
+                      seller.unregistered ? 'N/A' : seller.priceOwed.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>No sellers available.</p>
+        )}
       </div>
     </div>
   );
