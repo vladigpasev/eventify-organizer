@@ -12,8 +12,8 @@ import nodemailer from 'nodemailer';
 //@ts-ignore
 import QRCode from 'qrcode';
 
-
 const db = drizzle(sql);
+
 //@ts-ignore
 async function generateQRBase64(url) {
     try {
@@ -35,6 +35,7 @@ export async function createManualTicket(data: any) {
         eventUuid: z.string().nonempty(),
         paperTicketAccessToken: z.any(),
         sellerUuid: z.string().nonempty(),
+        reservation: z.boolean().optional(),
     });
 
     try {
@@ -72,6 +73,7 @@ export async function createManualTicket(data: any) {
             guestCount: validatedData.guestsCount,
             eventUuid: validatedData.eventUuid,
             sellerUuid: validatedData.sellerUuid,
+            reservation: validatedData.reservation || false,
         }).returning({ uuid: eventCustomers.uuid }).execute();
 
         // The first element of the array is the inserted row

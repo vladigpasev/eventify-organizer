@@ -12,7 +12,7 @@ import { cookies } from 'next/headers';
 
 const db = drizzle(sql);
 
-export async function addSeller(data:any) {
+export async function addSeller(data: any) {
     // Define a schema for event data validation
     const sellerSchema = z.object({
         email: z.string().nonempty(),
@@ -150,9 +150,9 @@ export async function getSellers(data: any) {
             return { success: false, message: 'Event not found' };
         }
 
-        if (currentEvent.userUuid !== userUuid) {
-            return { success: false, message: 'Не сте създател на това събитие!' };
-        }
+        // if (currentEvent.userUuid !== userUuid) {
+        //     return { success: false, message: 'Не сте създател на това събитие!' };
+        // }
 
         const eventPrice = currentEvent.price ? parseFloat(currentEvent.price) : 0;
 
@@ -184,25 +184,50 @@ export async function getSellers(data: any) {
                     .where(and(
                         //@ts-ignore
                         eq(eventCustomers.sellerUuid, userInfo.uuid),
-                        eq(eventCustomers.eventUuid, validatedData.eventUuid)
+                        eq(eventCustomers.eventUuid, validatedData.eventUuid),
+                        eq(eventCustomers.reservation, false) // Only count tickets with reservation: false
+                    ))
+                    .execute();
+
+                const reservationsDb = await db.select()
+                    .from(eventCustomers)
+                    //@ts-ignore
+                    .where(and(
+                        //@ts-ignore
+                        eq(eventCustomers.sellerUuid, userInfo.uuid),
+                        eq(eventCustomers.eventUuid, validatedData.eventUuid),
+                        eq(eventCustomers.reservation, true) // Count only reservations
                     ))
                     .execute();
 
                 const ticketsSold = ticketsSoldDb.length;
+                const reservations = reservationsDb.length;
                 const priceOwed = ticketsSold * eventPrice;
-
+                    console.log({
+                        sellerEmail: seller.sellerEmail,
+                    firstname: userInfo.firstname,
+                    lastname: userInfo.lastname,
+                    ticketsSold: ticketsSold,
+                    priceOwed: priceOwed,
+                    reservations: reservations,
+                    unregistered: false,
+                    })
                 return {
                     sellerEmail: seller.sellerEmail,
                     firstname: userInfo.firstname,
                     lastname: userInfo.lastname,
                     ticketsSold: ticketsSold,
                     priceOwed: priceOwed,
+                    reservations: reservations,
                     unregistered: false,
                 };
             } else {
                 return {
                     sellerEmail: seller.sellerEmail,
                     unregistered: true,
+                    ticketsSold: 0,
+                    priceOwed: 0,
+                    reservations: 0,
                 };
             }
         }));

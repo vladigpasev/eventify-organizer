@@ -123,6 +123,7 @@ function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, 
             eventUuid: eventId,
             paperTicketAccessToken: paperTicketAccessToken,
             sellerUuid: userUuid,
+            reservation: event.target.reservation.checked,
         };
 
         try {
@@ -210,9 +211,9 @@ function Modal({ toggleModal, eventId, onCustomerAdded, paperTicketAccessToken, 
                         min={1}
                         required
                     />
-                    <div className='flex items-start gap-2'>
-                        <input type="checkbox" id='declare' value="declare" className='checkbox' required />
-                        <label htmlFor="declare" className='text-gray-600 text-base cursor-pointer'>Информиран съм, че при ръчно добавяне на клиенти потребителят ще получи билети на електронната си поща и аз трябва да обработя плащането самостоятелно.</label>
+                     <div className='flex items-start gap-2'>
+                        <input type="checkbox" id='reservation' value="reservation" className='checkbox' />
+                        <label htmlFor="reservation" className='text-gray-600 text-base cursor-pointer'>Резервация (не съм получил плащане)</label>
                     </div>
                     <button
                         type="submit"

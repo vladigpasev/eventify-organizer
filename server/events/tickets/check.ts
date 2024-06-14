@@ -7,6 +7,7 @@ import { eventCustomers, paperTickets, users } from '../../../schema/schema';
 import { eq } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
 const db = drizzle(sql);
 
@@ -48,6 +49,7 @@ export async function checkTicket(data: any) {
             isEntered: eventCustomers.isEntered,
             createdAt: eventCustomers.createdAt,
             sellerUuid: eventCustomers.sellerUuid,
+            reservation: eventCustomers.reservation,
         })
             .from(eventCustomers)
             .where(eq(eventCustomers.uuid, customerUuid))
@@ -107,7 +109,6 @@ export async function checkTicket(data: any) {
         return ({ success: false });
     }
 }
-
 
 export async function markAsEntered(data: any) {
     // Define a schema for event data validation
@@ -173,6 +174,47 @@ export async function markAsExited(data: any) {
         await db.update(eventCustomers)
             .set({
                 isEntered: false,
+            })
+            .where(eq(eventCustomers.uuid, customerUuid));
+
+        return ({ success: true });
+    } catch (err) {
+        console.log(err)
+        return ({ success: false });
+    }
+}
+
+export async function markAsPaid(data: any) {
+    const token = cookies().get("token")?.value;
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const userUuid = decodedToken.uuid;
+    // Define a schema for event data validation
+    const ticketSchema = z.object({
+        ticketToken: z.string().nonempty(),
+        eventUuid: z.string().nonempty(),
+    });
+    const validatedData = ticketSchema.parse(data);
+    try {
+        const ticketToken = validatedData.ticketToken;
+        const decodedTicketToken = await jwt.verify(ticketToken, process.env.JWT_SECRET);
+        let customerUuid;
+        if (decodedTicketToken.paper) {
+            const paperUuid = decodedTicketToken.uuid;
+            const currentPaperTicketDb = await db.select({
+                assignedCustomer: paperTickets.assignedCustomer,
+            })
+                .from(paperTickets)
+                .where(eq(paperTickets.uuid, paperUuid))
+                .execute();
+            const currentPaperTicket = currentPaperTicketDb[0];
+            customerUuid = currentPaperTicket.assignedCustomer;
+        } else {
+            customerUuid = decodedTicketToken.uuid;
+        }
+        await db.update(eventCustomers)
+            .set({
+                reservation: false,
+                sellerUuid: userUuid,
             })
             .where(eq(eventCustomers.uuid, customerUuid));
 

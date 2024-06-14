@@ -65,6 +65,7 @@ export const eventCustomers = pgTable('eventCustomers', {
   paperTicket: varchar('paperTicket', { length: 255 }),
   createdAt: timestamp('created_at').defaultNow(), // Added createdAt field
   sellerUuid: varchar('sellerUuid', { length: 100 }),
+  reservation: boolean('reservation').default(false),
 });
 
 export const paperTickets = pgTable('paperTickets', {

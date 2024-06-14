@@ -30,6 +30,7 @@ interface Customer {
   sellerName: string | null;
   sellerEmail: string | null;
   sellerCurrent: boolean;
+  reservation: boolean;
 }
 
 const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
@@ -43,6 +44,8 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   const [isLimitChanged, setIsLimitChanged] = useState<boolean>(false);
 
   const enteredCount = users.filter(user => user.isEntered).length;
+  const reservationCount = users.filter(user => user.reservation).length;
+  const ticketCount = users.length - reservationCount;
 
   const fetchUsers = async () => {
     try {
@@ -109,11 +112,10 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
           <AddCustomer eventId={eventId} onCustomerAdded={fetchUsers} userUuid={userUuid} />
           <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers} />
         </div>
-
       </div>
-      {isSeller && (<>
-       <div className='pb-5'><strong >Лимит на билетите: {limit || 'няма'}</strong></div>
-      </>) || <>
+      {isSeller && (
+        <div className='pb-5'><strong>Лимит на билетите: {limit || 'няма'}</strong></div>
+      ) || (
         <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
           <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Лимит на билетите (оставете празно, ако няма):</label>
           <input
@@ -134,15 +136,18 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
             {limitLoading ? 'Зареждане...' : 'Промени лимита'}
           </button>
         </form>
-      </>}
+      )}
       {isLoading ? <>Зареждане...</> :
         <>
-          {isSeller && (<></>) || <>
+          {isSeller || (
             <div><SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} /></div>
-          </>}
+          )}
           <div className="mb-4">
             <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
-              {users.length} Билети
+              {ticketCount} Билети
+            </span>
+            <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
+              {reservationCount} Резервации
             </span>
             <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-800">
               {enteredCount} влeзли
@@ -157,8 +162,6 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          {/* Customer list and management buttons */}
-
           <div className="overflow-x-auto">
             <table className="table">
               <thead>
@@ -177,7 +180,7 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
               </thead>
               <tbody>
                 {filteredUsers.map((customer, index) => (
-                  <tr key={index}>
+                  <tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
                     <th></th>
                     <td>
                       <div className="flex items-center">

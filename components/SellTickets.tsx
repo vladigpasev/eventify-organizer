@@ -26,7 +26,7 @@ function SellTickets({ eventUuid, isSeller }) {
 
     fetchSellers();
   }, [eventUuid]);
-//@ts-ignore
+  //@ts-ignore
   const handleSubmit = async (event) => {
     event.preventDefault();
     setLoading(true);
@@ -92,7 +92,7 @@ function SellTickets({ eventUuid, isSeller }) {
           {error && <p className="text-red-500 mt-2">{error}</p>}
         </form>
       )}
-      <div className="mt-4">
+      <div className="mt-4 overflow-x-auto w-full">
         {sellers.length > 0 ? (
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -106,28 +106,34 @@ function SellTickets({ eventUuid, isSeller }) {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Дължима сума
                 </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Резервации
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {sellers
-              //@ts-ignore
+                //@ts-ignore
                 .sort((a, b) => b.ticketsSold - a.ticketsSold)
                 .map((seller) => (
                   //@ts-ignore
                   <tr key={seller.sellerEmail}>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {
-                      //@ts-ignore
-                      seller.sellerEmail} ({seller.firstname ? <>{seller.firstname} {seller.lastname}</> : <>нерегистриран</>})
+                        //@ts-ignore
+                        seller.sellerEmail} ({seller.firstname ? <>{seller.firstname} {seller.lastname}</> : <>нерегистриран</>})
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
-                    //@ts-ignore
-                    seller.ticketsSold || 0}</td>
+                      //@ts-ignore
+                      seller.ticketsSold || 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {
-                      //@ts-ignore
-                      seller.unregistered ? 'N/A' : seller.priceOwed.toFixed(2)}
+                        //@ts-ignore
+                        seller.unregistered ? 'N/A' : seller.priceOwed.toFixed(2)}
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
+                      //@ts-ignore
+                      seller.reservations || 0}</td>
                   </tr>
                 ))}
             </tbody>

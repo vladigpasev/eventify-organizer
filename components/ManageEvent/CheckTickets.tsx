@@ -1,9 +1,8 @@
-//Copyright (C) 2024  Vladimir Pasev
-"use client"
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { QrScanner } from '@yudiel/react-qr-scanner';
-import { checkTicket, markAsEntered, markAsExited } from '@/server/events/tickets/check';
+import { checkTicket, markAsEntered, markAsExited, markAsPaid } from '@/server/events/tickets/check';
 import { checkAuthenticated } from '@/server/auth';
 import { useRouter } from 'next/navigation';
 
@@ -18,7 +17,7 @@ function CheckTicket({ eventId, onEnteredOrExited }) {
       setModalOpen(!isModalOpen); // If authenticated, toggle the modal
     } else {
       router.refresh(); // If not authenticated, reload the page
-      alert('Сесията ви е изтекла. Моля, опреснете страницата, за да влезете отново.')
+      alert('Сесията ви е изтекла. Моля, опреснете страницата, за да влезете отново.');
     }
   };
 
@@ -77,6 +76,28 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
 
   };
 
+  const handleMarkAsPaid = async () => {
+    const data = {
+      ticketToken: ticketToken,
+      eventUuid: eventId
+    };
+
+    try {
+      await markAsPaid(data);
+      //@ts-ignore
+      setScanResult(prev => ({
+        ...prev,
+        response: {
+          ...prev.response,
+          reservation: false
+        }
+      }));
+      onEnteredOrExited();
+    } catch (error) {
+      console.error('Error marking ticket as paid:', error);
+    }
+  };
+
   useEffect(() => {
     const checkTicketWithToken = async () => {
       if (ticketTokenProp) {
@@ -112,6 +133,32 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
           console.error('Error marking ticket as exited:', error);
         }
       };
+
+      if (currentCustomer.reservation) {
+        return (
+          <div className="text-center p-4">
+            <div className="text-blue-500">
+              <svg className="mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} width={50} height={50}><path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" /></svg>
+              <p className="text-xl font-bold">Това е резервация</p>
+            </div>
+            <UserInfo currentCustomer={currentCustomer} />
+            <div className='flex'>
+              <button onClick={handleMarkAsPaid} className="btn bg-blue-500 text-white mt-4 w-full">
+                Маркирай като платено
+              </button>
+            </div>
+            <div className='flex flex-col justify-center gap-5'>
+              <button onClick={() => { setScanResult(null); }} className="btn btn-secondary mt-4">
+                Сканирай друг
+              </button>
+              <button onClick={() => { setScanResult(null); toggleModal(); }} className="link mt-4">
+                Затвори
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="text-center p-4">
           {currentCustomer.isEntered ? (

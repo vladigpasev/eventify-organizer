@@ -21,6 +21,7 @@ interface Customer {
   sellerName: string | null;
   sellerEmail: string | null;
   sellerCurrent: boolean;
+  reservation: boolean;
 }
 
 export async function getUsers(eventUuid: string): Promise<Customer[]> {
@@ -77,6 +78,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
     paperTicket: eventCustomers.paperTicket,
     createdAt: eventCustomers.createdAt,
     sellerUuid: eventCustomers.sellerUuid,
+    reservation: eventCustomers.reservation,
   })
     .from(eventCustomers)
     .where(and(
