@@ -181,7 +181,11 @@ export async function getSellers(data: any) {
                 const ticketsSoldDb = await db.select()
                     .from(eventCustomers)
                     //@ts-ignore
-                    .where(eq(eventCustomers.sellerUuid, userInfo.uuid))
+                    .where(and(
+                        //@ts-ignore
+                        eq(eventCustomers.sellerUuid, userInfo.uuid),
+                        eq(eventCustomers.eventUuid, validatedData.eventUuid)
+                    ))
                     .execute();
 
                 const ticketsSold = ticketsSoldDb.length;
