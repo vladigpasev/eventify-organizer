@@ -26,7 +26,6 @@ async function generateQRBase64(url) {
 }
 
 export async function createManualTicket(data: any) {
-    // Define a schema for event data validation
     const ticketSchema = z.object({
         firstname: z.string().nonempty(),
         lastname: z.string().nonempty(),
@@ -41,7 +40,7 @@ export async function createManualTicket(data: any) {
     try {
         const validatedData = ticketSchema.parse(data);
 
-        // Fetch current number of tickets and event limit
+        // Fetch event info
         const eventInfo = await db.select({
             limit: events.limit,
         })
@@ -51,21 +50,19 @@ export async function createManualTicket(data: any) {
 
         const currentEvent = eventInfo[0];
 
-        // Fetch the current count of tickets for the event
+        // Fetch ticket count
         const ticketCount = await db.select()
             .from(eventCustomers)
             .where(eq(eventCustomers.eventUuid, validatedData.eventUuid))
             .execute();
 
         const currentTicketCount = ticketCount.length;
-
-        // Check if the event limit is exceeded
         //@ts-ignore
         if (currentEvent.limit !== null && currentTicketCount >= currentEvent.limit) {
             return { success: false, message: 'Лимитът на билетите е достигнат!' };
         }
 
-        // Insert the data into the database and retrieve the uuid
+        // Insert new customer
         const insertResult = await db.insert(eventCustomers).values({
             firstname: validatedData.firstname,
             lastname: validatedData.lastname,
@@ -76,65 +73,22 @@ export async function createManualTicket(data: any) {
             reservation: validatedData.reservation || false,
         }).returning({ uuid: eventCustomers.uuid }).execute();
 
-        // The first element of the array is the inserted row
         const customerUuid = insertResult[0]?.uuid;
 
-        // Generate a ticket token using the retrieved uuid
+        // Generate ticket token
         const ticketToken = jwt.sign({ uuid: customerUuid }, process.env.JWT_SECRET);
 
-        // Run the updates in parallel
         const updateCustomerPromise = db.update(eventCustomers)
-            .set({
-                ticketToken,
-            })
+            .set({ ticketToken })
             //@ts-ignore
             .where(eq(eventCustomers.uuid, customerUuid));
 
         let paperTicketUpdatePromise = Promise.resolve();
         if (validatedData.paperTicketAccessToken) {
-            paperTicketUpdatePromise = (async () => {
-                const paperTicketAccessToken = validatedData.paperTicketAccessToken;
-                const paperTicketAccessTokenDecoded = await jwt.verify(paperTicketAccessToken, process.env.JWT_SECRET);
-                const paperTicketUuid = paperTicketAccessTokenDecoded.uuid;
-
-                const currentPaperTicketDb = await db.select({
-                    eventUuid: paperTickets.eventUuid,
-                    assignedCustomer: paperTickets.assignedCustomer,
-                    nineDigitCode: paperTickets.nineDigitCode,
-                })
-                    .from(paperTickets)
-                    .where(eq(paperTickets.uuid, paperTicketUuid))
-                    .execute();
-                const currentCustomer = currentPaperTicketDb[0];
-
-                if (currentCustomer.eventUuid !== validatedData.eventUuid) {
-                    // Handle event mismatch if needed
-                    return;
-                } else {
-                    if (currentCustomer.assignedCustomer) {
-                        // Handle already assigned customer if needed
-                        return;
-                    } else {
-                        await db.update(paperTickets)
-                            .set({
-                                assignedCustomer: customerUuid,
-                            })
-                            //@ts-ignore
-                            .where(eq(paperTickets.uuid, paperTicketUuid));
-
-                        // Add nineDigitCode to eventCustomers table
-                        if (currentCustomer.nineDigitCode) {
-                            await db.update(eventCustomers)
-                                .set({
-                                    paperTicket: currentCustomer.nineDigitCode,
-                                })
-                                //@ts-ignore
-                                .where(eq(eventCustomers.uuid, customerUuid));
-                        }
-                    }
-                }
-            })();
+            //@ts-ignore
+            paperTicketUpdatePromise = handlePaperTicketUpdate(validatedData, customerUuid);
         }
+
         const eventDataPromise = db.select({
             eventName: events.eventName,
             thumbnailUrl: events.thumbnailUrl,
@@ -147,14 +101,19 @@ export async function createManualTicket(data: any) {
 
         const eventData = (await eventDataPromise)[0];
 
-        // Defer email sending to not block the response
-        sendTicketEmail({
+        // Send the email and wait for the result
+        const emailSendResult = await sendTicketEmail({
             email: validatedData.email,
             customerName: `${validatedData.firstname} ${validatedData.lastname}`,
             eventName: eventData.eventName,
             ticketToken,
             thumbnailUrl: eventData.thumbnailUrl,
         });
+
+        if (!emailSendResult.success) {
+            return { success: false, message: 'Event created, but email sending failed' };
+        }
+
         return { success: true, message: 'Event created successfully', customerUuid, ticketToken };
 
     } catch (error) {
@@ -163,43 +122,72 @@ export async function createManualTicket(data: any) {
     }
 }
 
-//@ts-ignore
-async function sendTicketEmail({ email, customerName, eventName, ticketToken, thumbnailUrl }) {
-    const currentDate = new Date();
-    const options = {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit'
-    };
-    //@ts-ignore
-    const ticketDate = currentDate.toLocaleDateString('en-US', options);
+async function handlePaperTicketUpdate(validatedData: any, customerUuid: string) {
+    const paperTicketAccessToken = validatedData.paperTicketAccessToken;
+    const paperTicketAccessTokenDecoded = await jwt.verify(paperTicketAccessToken, process.env.JWT_SECRET);
+    const paperTicketUuid = paperTicketAccessTokenDecoded.uuid;
 
-    if (thumbnailUrl === "/images/pngs/event.png") {
-        thumbnailUrl = process.env.BASE_URL + "/images/pngs/event.png";
-    }
+    const currentPaperTicketDb = await db.select({
+        eventUuid: paperTickets.eventUuid,
+        assignedCustomer: paperTickets.assignedCustomer,
+        nineDigitCode: paperTickets.nineDigitCode,
+    })
+        .from(paperTickets)
+        .where(eq(paperTickets.uuid, paperTicketUuid))
+        .execute();
 
-    const qrCodeDataURL = await generateQRBase64(ticketToken);
-    const qrCodeBuffer = Buffer.from(qrCodeDataURL.split("base64,")[1], "base64");
+    const currentCustomer = currentPaperTicketDb[0];
 
-    let transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_SERVER_HOST,
-        port: process.env.EMAIL_SERVER_PORT,
-        secure: false,
-        auth: {
-            user: process.env.EMAIL_SERVER_USER,
-            pass: process.env.EMAIL_SERVER_PASSWORD,
-        },
-        tls: {
-            ciphers: 'SSLv3'
+    if (currentCustomer.eventUuid !== validatedData.eventUuid) {
+        return;
+    } else if (currentCustomer.assignedCustomer) {
+        return;
+    } else {
+        await db.update(paperTickets)
+            .set({ assignedCustomer: customerUuid })
+            .where(eq(paperTickets.uuid, paperTicketUuid));
+
+        if (currentCustomer.nineDigitCode) {
+            await db.update(eventCustomers)
+                .set({ paperTicket: currentCustomer.nineDigitCode })
+                .where(eq(eventCustomers.uuid, customerUuid));
         }
-    });
+    }
+}
 
-    let info = await transporter.sendMail({
-        from: `"Eventify (${eventName})" <${process.env.EMAIL_FROM}>`,
-        to: email,
-        subject: `${eventName} - Билет`,
-        text: `Здравей, ${customerName}! Този имейл е да те информира, че ти успешно закупи билет за събитието ${eventName}! Можеш да видиш билета си като кликнеш на линка. Линк: ${process.env.TICKETS_BASE_URL}/${ticketToken}`,
-        html: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en"><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta name="x-apple-disable-message-reformatting"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta content="telephone=no" name="format-detection"><title>New Template 2</title> <!--[if (mso 16)]><style type="text/css">     a {text-decoration: none;}     </style><![endif]--> <!--[if gte mso 9]><style>sup { font-size: 100% !important; }</style><![endif]--> <!--[if gte mso 9]><xml> <o:OfficeDocumentSettings> <o:AllowPNG></o:AllowPNG> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettings> </xml>\
+async function sendTicketEmail({ email, customerName, eventName, ticketToken, thumbnailUrl }: any) {
+    try {
+        const currentDate = new Date();
+        const options = { year: 'numeric', month: 'short', day: '2-digit' };
+        //@ts-ignore
+        const ticketDate = currentDate.toLocaleDateString('en-US', options);
+
+        if (thumbnailUrl === "/images/pngs/event.png") {
+            thumbnailUrl = process.env.BASE_URL + "/images/pngs/event.png";
+        }
+
+        const qrCodeDataURL = await generateQRBase64(ticketToken);
+        const qrCodeBuffer = Buffer.from(qrCodeDataURL.split("base64,")[1], "base64");
+
+        const transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_SERVER_HOST,
+            port: process.env.EMAIL_SERVER_PORT,
+            secure: false,
+            auth: {
+                user: process.env.EMAIL_SERVER_USER,
+                pass: process.env.EMAIL_SERVER_PASSWORD,
+            },
+            tls: {
+                ciphers: 'SSLv3'
+            }
+        });
+
+        const info = await transporter.sendMail({
+            from: `"Eventify (${eventName})" <${process.env.EMAIL_FROM}>`,
+            to: email,
+            subject: `${eventName} - Билет`,
+            text: `Здравей, ${customerName}! Този имейл е да те информира, че ти успешно закупи билет за събитието ${eventName}! Можеш да видиш билета си като кликнеш на линка. Линк: ${process.env.TICKETS_BASE_URL}/${ticketToken}`,
+            html: '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="en"><head><meta charset="UTF-8"><meta content="width=device-width, initial-scale=1" name="viewport"><meta name="x-apple-disable-message-reformatting"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta content="telephone=no" name="format-detection"><title>New Template 2</title> <!--[if (mso 16)]><style type="text/css">     a {text-decoration: none;}     </style><![endif]--> <!--[if gte mso 9]><style>sup { font-size: 100% !important; }</style><![endif]--> <!--[if gte mso 9]><xml> <o:OfficeDocumentSettings> <o:AllowPNG></o:AllowPNG> <o:PixelsPerInch>96</o:PixelsPerInch> </o:OfficeDocumentSettings> </xml>\
                 <![endif]--><style type="text/css">#outlook a { padding:0;}.es-button { mso-style-priority:100!important; text-decoration:none!important;}a[x-apple-data-detectors] { color:inherit!important; text-decoration:none!important; font-size:inherit!important; font-family:inherit!important; font-weight:inherit!important; line-height:inherit!important;}.es-desk-hidden { display:none; float:left; overflow:hidden; width:0; max-height:0; line-height:0; mso-hide:all;}@media only screen and (max-width:600px) {p, ul li, ol li, a { line-height:150%!important } h1, h2, h3, h1 a, h2 a, h3 a { line-height:120%!important } h1 { font-size:36px!important; text-align:left } h2 { font-size:26px!important; text-align:left } h3 { font-size:20px!important; text-align:left } .es-header-body h1 a, .es-content-body h1 a, .es-footer-body h1 a { font-size:36px!important; text-align:left }\
                  .es-header-body h2 a, .es-content-body h2 a, .es-footer-body h2 a { font-size:26px!important; text-align:left } .es-header-body h3 a, .es-content-body h3 a, .es-footer-body h3 a { font-size:20px!important; text-align:left } .es-menu td a { font-size:12px!important } .es-header-body p, .es-header-body ul li, .es-header-body ol li, .es-header-body a { font-size:14px!important } .es-content-body p, .es-content-body ul li, .es-content-body ol li, .es-content-body a { font-size:14px!important } .es-footer-body p, .es-footer-body ul li, .es-footer-body ol li, .es-footer-body a { font-size:14px!important } .es-infoblock p, .es-infoblock ul li, .es-infoblock ol li, .es-infoblock a { font-size:12px!important } *[class="gmail-fix"] { display:none!important } .es-m-txt-c, .es-m-txt-c h1, .es-m-txt-c h2, .es-m-txt-c h3 { text-align:center!important } .es-m-txt-r, .es-m-txt-r h1, .es-m-txt-r h2, .es-m-txt-r h3 { text-align:right!important }\
                  .es-m-txt-l, .es-m-txt-l h1, .es-m-txt-l h2, .es-m-txt-l h3 { text-align:left!important } .es-m-txt-r img, .es-m-txt-c img, .es-m-txt-l img { display:inline!important } .es-button-border { display:inline-block!important } a.es-button, button.es-button { font-size:20px!important; display:inline-block!important } .es-adaptive table, .es-left, .es-right { width:100%!important } .es-content table, .es-header table, .es-footer table, .es-content, .es-footer, .es-header { width:100%!important; max-width:600px!important } .es-adapt-td { display:block!important; width:100%!important } .adapt-img { width:100%!important; height:auto!important } .es-m-p0 { padding:0!important } .es-m-p0r { padding-right:0!important } .es-m-p0l { padding-left:0!important } .es-m-p0t { padding-top:0!important } .es-m-p0b { padding-bottom:0!important } .es-m-p20b { padding-bottom:20px!important } .es-mobile-hidden, .es-hidden { display:none!important }\
@@ -228,16 +216,21 @@ async function sendTicketEmail({ email, customerName, eventName, ticketToken, th
                 <td align="left" style="padding:0;Margin:0;width:600px"><table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;padding-bottom:35px"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:18px;color:#333333;font-size:12px">Eventify.bg © 2024 Всички права запазени.</p> <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, \'helvetica neue\', helvetica, sans-serif;line-height:18px;color:#333333;font-size:12px">ул. Позитано 26, София, България</p></td></tr></table></td></tr></table></td></tr></table></td></tr></table>\
                  <table cellpadding="0" cellspacing="0" class="es-content" align="center" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;table-layout:fixed !important;width:100%"><tr><td class="es-info-area" align="center" style="padding:0;Margin:0"><table class="es-content-body" align="center" cellpadding="0" cellspacing="0" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px;background-color:transparent;width:600px" bgcolor="#FFFFFF" role="none"><tr><td align="left" style="padding:20px;Margin:0"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr>\
                 <td align="center" valign="top" style="padding:0;Margin:0;width:560px"><table cellpadding="0" cellspacing="0" width="100%" role="none" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px"><tr><td align="center" style="padding:0;Margin:0;display:none"></td> </tr></table></td></tr></table></td></tr></table></td></tr></table></td></tr></table></div></body></html>',
-        attachments: [
-            {
-                filename: 'offline-ticket-qr-code.png',
-                content: qrCodeBuffer,
-                contentType: 'image/png'
-            }
-        ]
-    });
+            attachments: [
+                {
+                    filename: 'offline-ticket-qr-code.png',
+                    content: qrCodeBuffer,
+                    contentType: 'image/png'
+                }
+            ]
+        });
 
-    console.log("Message sent: %s", info.messageId);
+        console.log("Message sent: %s", info.messageId);
+        return { success: true };
+    } catch (error) {
+        console.error('Error sending email:', error);
+        return { success: false, message: 'Failed to send email' };
+    }
 }
 
 export async function deactivateManualTicket(customerUuid: any) {
