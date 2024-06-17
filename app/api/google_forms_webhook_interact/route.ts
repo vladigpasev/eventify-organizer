@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
             return new Response(JSON.stringify({ }), {
                 status: 500
             });
-            return { success: false, message: 'Лимитът на билетите е достигнат!' };
         }
 
         // Insert new customer
