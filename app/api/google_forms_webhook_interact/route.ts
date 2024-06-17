@@ -127,7 +127,6 @@ export async function POST(request: NextRequest) {
             return new Response(JSON.stringify({ }), {
                 status: 500
             });
-            return { success: false, message: 'Event created, but email sending failed' };
         }
 
         return new Response(JSON.stringify({ }), {
@@ -139,7 +138,6 @@ export async function POST(request: NextRequest) {
         return new Response(JSON.stringify({ }), {
             status: 500
         });
-        return { success: false, message: 'Event creation failed' };
     }
 }
 
