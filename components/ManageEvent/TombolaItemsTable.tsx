@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { getTombolaUsers } from '@/server/events/getUsers';
-import TombolaTicketDeactivateBtn from './TombolaTicketDeactivateBtn';
+import { getTombolaItems } from '@/server/events/add_tombola_item';
+import AddTombolaItem from './AddTombolaItem'; // Import the AddItem component
 
 interface UserTableProps {
 	eventId: string;
@@ -9,38 +9,28 @@ interface UserTableProps {
 	userUuid: string;
 }
 
-interface Customer {
+interface TombolaItem {
 	uuid: string;
-	firstname: string;
-	lastname: string;
-	email: string;
-	guestCount: number;
-	ticketToken: string;
-	isEntered: boolean;
-	paperTicket: string;
-	createdAt: string;
-	sellerName: string | null;
-	sellerEmail: string | null;
-	sellerCurrent: boolean;
-	reservation: boolean;
-	tombola_weight: number;
+	itemName: string;
+	winnerUuid: string;
+	winnerName: string;
 }
 
 const TombolaItemsTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
-	const [users, setUsers] = useState<Customer[]>([]);
-	const [filteredUsers, setFilteredUsers] = useState<Customer[]>([]);
+	const [items, setItems] = useState<TombolaItem[]>([]);
+	const [filteredItems, setFilteredItems] = useState<TombolaItem[]>([]);
 	const [searchTerm, setSearchTerm] = useState('');
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [error, setError] = useState<Error | null>(null);
 
-	const fetchUsers = async () => {
+	const fetchItems = async () => {
 		try {
 			setIsLoading(true);
-			const userResponse = await getTombolaUsers(eventId);
+			const itemsResponse = await getTombolaItems(eventId);
 			//@ts-ignore
-			setUsers(userResponse);
+			setItems(itemsResponse);
 		} catch (err) {
-			console.error('Error fetching users:', err);
+			console.error('Error fetching items:', err);
 			setError(err as Error);
 		} finally {
 			setIsLoading(false);
@@ -48,35 +38,34 @@ const TombolaItemsTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 	};
 
 	useEffect(() => {
-		fetchUsers();
+		fetchItems();
 	}, [eventId]);
 
 	useEffect(() => {
-		const filtered = users.filter(user => {
-			const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
-			const sellerFullName = user.sellerName ? `${user.sellerName} (${user.sellerEmail})`.toLowerCase() : '';
-			const combinedSearch = `${fullName} ${user.email} ${user.paperTicket || ''} ${sellerFullName}`;
-			return combinedSearch.includes(searchTerm.toLowerCase());
+		const filtered = items.filter(item => {
+			const itemName = item.itemName.toLowerCase();
+			return itemName.includes(searchTerm.toLowerCase());
 		});
-		setFilteredUsers(filtered);
-	}, [searchTerm, users]);
-	const totalTombolaTickets = users.reduce((acc, ticket) => {
-		//@ts-ignore
-		const weight = ticket.tombola_weight ? parseFloat(ticket.tombola_weight) : 0;
-		return acc + weight;
-	}, 0);
-	if (error) return <p>Error loading users: {error.message}</p>;
+		setFilteredItems(filtered);
+	}, [searchTerm, items]);
+
+	const totalTombolaItems = items.length;
+
+	if (error) return <p>Error loading items: {error.message}</p>;
 
 	return (
 		<div className="bg-white shadow rounded p-4 text-black">
 			<div className='flex justify-between items-center'>
 				<h2 className="text-xl font-semibold mb-3">Продукти в томбола</h2>
+				<div className='flex gap-2 sm:flex-row flex-col'>
+					<AddTombolaItem eventId={eventId} onItemAdded={fetchItems} userUuid={userUuid} />
+				</div>
 			</div>
 			{isLoading ? <>Зареждане...</> :
 				<>
 					<div className="mb-4">
 						<span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
-							{totalTombolaTickets} Продукти в томбола
+							{totalTombolaItems} Продукти в томбола
 						</span>
 					</div>
 					<div className="mb-4">
@@ -93,30 +82,17 @@ const TombolaItemsTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 							<thead>
 								<tr>
 									<th></th>
-									<th>Име</th>
-									<th>Имейл</th>
-									<th>Продавач</th>
-									<th>Купени билети</th>
-									<th></th>
+									<th>Име на продукт</th>
+									<th>Победител</th>
 								</tr>
 							</thead>
 							<tbody>
-								{filteredUsers.map((customer, index) => (
-									<tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
+								{filteredItems.map((item, index) => (
+									<tr key={index}>
 										<th></th>
-										<td>
-											<div className="flex items-center">
-												<div className="avatar"></div>
-												<div>
-													<div className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}>{`${customer.firstname} ${customer.lastname}`}</div>
-												</div>
-											</div>
-										</td>
-										<td>{customer.email}</td>
-										<td>{customer.sellerName} ({customer.sellerEmail})</td>
-										<td>{customer.tombola_weight}</td>
+										<td>{item.itemName}</td>
+										<td>{item.winnerName}</td>
 										<th>
-											<TombolaTicketDeactivateBtn customerUuid={customer.uuid} disabled={!customer.sellerCurrent && isSeller} />
 										</th>
 									</tr>
 								))}

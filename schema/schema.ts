@@ -72,6 +72,14 @@ export const eventCustomers = pgTable('eventCustomers', {
   tombola_seller_uuid: varchar('tombola_seller_uuid', { length: 100 }),
 });
 
+export const tombolaItems = pgTable('tombolaItems', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
+  itemName: varchar('itemName', { length: 255 }).notNull(),
+  eventUuid: varchar('eventUuid', { length: 100 }).notNull(),
+  winnerUuid: varchar('winnerUuid', { length: 100 }),
+});
+
 export const paperTickets = pgTable('paperTickets', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),

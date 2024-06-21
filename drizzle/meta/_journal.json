@@ -463,6 +463,13 @@
       "when": 1718914473349,
       "tag": "0065_wealthy_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "5",
+      "when": 1718953410811,
+      "tag": "0066_same_famine",
+      "breakpoints": true
     }
   ]
 }

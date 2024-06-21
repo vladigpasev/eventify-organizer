@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation';
 import TombolaTable from '../../../../../components/ManageEvent/TombolaTable';
 import Link from 'next/link';
 import TombolaItemsTable from '@/components/ManageEvent/TombolaItemsTable';
+import DrawTombola from '@/components/ManageEvent/DrawTombola';
 
 export const maxDuration = 300;
 
@@ -87,9 +88,10 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
                     {currentEvent.eventName} - томбола
                 </h1>
             </div>
+            <DrawTombola eventId={params.uuid} isSeller={isSeller} userUuid={userUuid} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="bg-white shadow rounded p-4 text-black">
-                <TombolaItemsTable eventId={params.uuid} isSeller={isSeller} userUuid={userUuid} />
+                    <TombolaItemsTable eventId={params.uuid} isSeller={isSeller} userUuid={userUuid} />
                 </div>
                 <TombolaTable eventId={params.uuid} isSeller={isSeller} userUuid={userUuid} />
             </div>

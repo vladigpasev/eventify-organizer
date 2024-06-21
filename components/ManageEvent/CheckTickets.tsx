@@ -5,7 +5,6 @@ import { QrScanner } from '@yudiel/react-qr-scanner';
 import { checkTicket, markAsEntered, markAsExited, markAsPaid, addToRaffle } from '@/server/events/tickets/check';
 import { checkAuthenticated } from '@/server/auth';
 import { useRouter } from 'next/navigation';
-
 //@ts-ignore
 function CheckTicket({ eventId, onEnteredOrExited }) {
   const [isModalOpen, setModalOpen] = useState(false);
@@ -56,7 +55,8 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
   const [isRaffleModalOpen, setRaffleModalOpen] = useState(false);
   const [raffleTickets, setRaffleTickets] = useState();
   const [rafflePrice, setRafflePrice] = useState(0);
-  //@ts-ignore
+  const [isSaving, setIsSaving] = useState(false);
+//@ts-ignore
   const handleDecode = async (result) => {
     if (result) {
       try {
@@ -68,7 +68,7 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
       }
     }
   };
-  //@ts-ignore
+//@ts-ignore
   const handleError = (error) => {
     console.error('Error during QR Code scan:', error);
   };
@@ -117,6 +117,8 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
       raffleTickets: raffleTickets
     };
 
+    setIsSaving(true);
+
     try {
       await addToRaffle(data);
       setRaffleModalOpen(false);
@@ -130,6 +132,8 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
       }));
     } catch (error) {
       console.error('Error adding ticket to raffle:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -305,8 +309,8 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
                 className="w-full p-2 border border-gray-300 rounded-md"
               />
               <p className="mt-2">Цена: {rafflePrice} лв.</p>
-              <button onClick={handleAddToRaffle} className="btn bg-blue-500 text-white mt-4 w-full">
-                Запази
+              <button onClick={handleAddToRaffle} className="btn bg-blue-500 text-white mt-4 w-full" disabled={isSaving}>
+                {isSaving ? "Запазване..." : "Запази"}
               </button>
               <button onClick={() => setRaffleModalOpen(false)} className="btn btn-secondary mt-4 w-full">
                 Откажи
@@ -318,6 +322,7 @@ export function Modal({ toggleModal, eventId, scanResult, setScanResult, ticketT
     </div>
   );
 }
+
 //@ts-ignore
 const UserInfo = ({ currentCustomer }) => (
   <div className="mt-4 text-left">
