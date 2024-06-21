@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { eventCustomers, events, paperTickets, sellers, users } from '../../schema/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
 //@ts-ignore
@@ -140,6 +140,7 @@ export async function getSellers(data: any) {
             eventName: events.eventName,
             userUuid: events.userUuid,
             price: events.price,
+            tombolaPrice: events.tombolaPrice,
         })
             .from(events)
             .where(eq(events.uuid, validatedData.eventUuid))
@@ -150,13 +151,10 @@ export async function getSellers(data: any) {
             return { success: false, message: 'Event not found' };
         }
 
-        // if (currentEvent.userUuid !== userUuid) {
-        //     return { success: false, message: 'Не сте създател на това събитие!' };
-        // }
-
         const eventPrice = currentEvent.price ? parseFloat(currentEvent.price) : 0;
+        const tombolaPrice = currentEvent.tombolaPrice ? parseFloat(currentEvent.tombolaPrice) : 0;
 
-        // Check if the seller already exists for this event
+        // Get sellers for the event
         const getSellers = await db.select({
             sellerEmail: sellers.sellerEmail,
         })
@@ -180,7 +178,6 @@ export async function getSellers(data: any) {
             if (userInfo) {
                 const ticketsSoldDb = await db.select()
                     .from(eventCustomers)
-                    //@ts-ignore
                     .where(and(
                         //@ts-ignore
                         eq(eventCustomers.sellerUuid, userInfo.uuid),
@@ -191,7 +188,6 @@ export async function getSellers(data: any) {
 
                 const reservationsDb = await db.select()
                     .from(eventCustomers)
-                    //@ts-ignore
                     .where(and(
                         //@ts-ignore
                         eq(eventCustomers.sellerUuid, userInfo.uuid),
@@ -200,18 +196,38 @@ export async function getSellers(data: any) {
                     ))
                     .execute();
 
+                const tombolaTicketsDb = await db.select({
+                    tombola_weight: eventCustomers.tombola_weight
+                })
+                    .from(eventCustomers)
+                    .where(and(
+                        //@ts-ignore
+                        eq(eventCustomers.tombola_seller_uuid, userInfo.uuid),
+                        eq(eventCustomers.eventUuid, validatedData.eventUuid),
+                        //@ts-ignore
+                        gt(eventCustomers.tombola_weight, 0)
+                    ))
+                    .execute();
+
                 const ticketsSold = ticketsSoldDb.length;
                 const reservations = reservationsDb.length;
-                const priceOwed = ticketsSold * eventPrice;
-                    console.log({
-                        sellerEmail: seller.sellerEmail,
+                const tombolaWeightSum = tombolaTicketsDb.reduce((acc, ticket) => {
+                    const weight = ticket.tombola_weight ? parseFloat(ticket.tombola_weight) : 0;
+                    return acc + weight;
+                }, 0);
+
+                const priceOwed = ticketsSold * eventPrice + tombolaWeightSum * tombolaPrice;
+                console.log(JSON.stringify({
+                    sellerEmail: seller.sellerEmail,
                     firstname: userInfo.firstname,
                     lastname: userInfo.lastname,
                     ticketsSold: ticketsSold,
                     priceOwed: priceOwed,
                     reservations: reservations,
+                    tombolaTickets: tombolaWeightSum,
                     unregistered: false,
-                    })
+                    tombolaPrice: tombolaPrice,
+                }));
                 return {
                     sellerEmail: seller.sellerEmail,
                     firstname: userInfo.firstname,
@@ -219,6 +235,7 @@ export async function getSellers(data: any) {
                     ticketsSold: ticketsSold,
                     priceOwed: priceOwed,
                     reservations: reservations,
+                    tombolaTickets: tombolaWeightSum,
                     unregistered: false,
                 };
             } else {
@@ -228,6 +245,7 @@ export async function getSellers(data: any) {
                     ticketsSold: 0,
                     priceOwed: 0,
                     reservations: 0,
+                    tombolaTickets: 0,
                 };
             }
         }));

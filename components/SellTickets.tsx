@@ -104,6 +104,9 @@ function SellTickets({ eventUuid, isSeller }) {
                   Продадени билети
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Продадени билети за томбола
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Дължима сума
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -126,6 +129,10 @@ function SellTickets({ eventUuid, isSeller }) {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
                       //@ts-ignore
                       seller.ticketsSold || 0}</td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
+                      //@ts-ignore
+                      seller.tombolaTickets || 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {
                         //@ts-ignore

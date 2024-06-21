@@ -8,6 +8,7 @@ import AddCustomer from './AddCustomer';
 import CheckTicket from './CheckTickets';
 import SendEmailToAll from './SendEmailToAll';
 import { getCurrentLimit, changeLimit } from '@/server/events/limit'; // Import the necessary functions
+import { getCurrentTombolaPrice, changeTombolaPrice } from '@/server/events/tombola_price';
 
 export const maxDuration = 300;
 
@@ -42,6 +43,8 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   const [limit, setLimit] = useState<string | null>(null);
   const [limitLoading, setLimitLoading] = useState<boolean>(false);
   const [isLimitChanged, setIsLimitChanged] = useState<boolean>(false);
+  const [tombolaPrice, setTombolaPrice] = useState<string | null>(null);
+  const [isTombolaPriceChanged, setIsTombolaPriceChanged] = useState<boolean>(false);
 
   const enteredCount = users.filter(user => user.isEntered).length;
   const reservationCount = users.filter(user => user.reservation).length;
@@ -70,6 +73,15 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     }
   };
 
+  const fetchTombolaPrice = async () => {
+    try {
+      const currentTombolaPrice = await getCurrentTombolaPrice({ eventUuid: eventId });
+      setTombolaPrice(currentTombolaPrice.tombolaPrice || '');
+    } catch (err) {
+      console.error('Error fetching tombola price:', err);
+    }
+  };
+
   const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLimit(e.target.value);
     setIsLimitChanged(true);
@@ -87,9 +99,27 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     }
   };
 
+  const handleTombolaPriceSubmit = async () => {
+    setLimitLoading(true);
+    try {
+      await changeTombolaPrice({ tombolaPrice: tombolaPrice, eventUuid: eventId });
+      setIsTombolaPriceChanged(false);
+    } catch (err) {
+      console.error('Error changing tombola price:', err);
+    } finally {
+      setLimitLoading(false);
+    }
+  };
+
+  const handleTombolaPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTombolaPrice(e.target.value);
+    setIsTombolaPriceChanged(true);
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchLimit();
+    fetchTombolaPrice();
   }, [eventId]);
 
   useEffect(() => {
@@ -111,31 +141,57 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
         <div className='flex gap-2 sm:flex-row flex-col'>
           <AddCustomer eventId={eventId} onCustomerAdded={fetchUsers} userUuid={userUuid} />
           <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers} />
+          <a href={`/dashboard/events/${eventId}/tombola`} className='btn'>Томбола</a>
         </div>
       </div>
       {isSeller && (
-        <div className='pb-5'><strong>Лимит на билетите: {limit || 'няма'}</strong></div>
+        <div>
+          <div className='pb-5'><strong>Лимит на билетите: {limit || 'няма'}</strong></div>
+          <div className='pb-5'><strong>Цена на билет от томболата: {tombolaPrice || 'няма'}</strong></div>
+        </div>
       ) || (
-        <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
-          <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Лимит на билетите (оставете празно, ако няма):</label>
-          <input
-            type="number"
-            id="limit-input"
-            aria-describedby="helper-text-explanation"
-            className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-            placeholder="Няма лимит"
-            min={0}
-            value={limit || ''}
-            onChange={handleLimitChange}
-          />
-          <button
-            type="submit"
-            className="btn btn-primary mt-2"
-            disabled={!isLimitChanged || limitLoading}
-          >
-            {limitLoading ? 'Зареждане...' : 'Промени лимита'}
-          </button>
-        </form>
+        <div>
+          <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
+            <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Лимит на билетите (оставете празно, ако няма):</label>
+            <input
+              type="number"
+              id="limit-input"
+              aria-describedby="helper-text-explanation"
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Няма лимит"
+              min={0}
+              value={limit || ''}
+              onChange={handleLimitChange}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary mt-2"
+              disabled={!isLimitChanged || limitLoading}
+            >
+              {limitLoading ? 'Зареждане...' : 'Промени лимита'}
+            </button>
+          </form>
+          <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleTombolaPriceSubmit(); }}>
+            <label htmlFor="tombola-price-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Цена на томбола (оставете празно, ако няма):</label>
+            <input
+              type="number"
+              id="tombola-price-input"
+              aria-describedby="helper-text-explanation"
+              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              placeholder="Няма томбола"
+              min={0}
+              value={tombolaPrice || ''}
+              onChange={handleTombolaPriceChange}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary mt-2"
+              disabled={!isTombolaPriceChanged || limitLoading}
+            >
+              {limitLoading ? 'Зареждане...' : 'Промени цената на томболата'}
+            </button>
+          </form>
+        </div>
       )}
       {isLoading ? <>Зареждане...</> :
         <>

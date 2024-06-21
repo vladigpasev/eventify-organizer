@@ -38,6 +38,7 @@ export const events = pgTable('events', {
   //@ts-ignore
   updatedAt: timestamp('updated_at').default(`now()`),
   limit: numeric('limit'),
+  tombolaPrice: numeric('tombolaPrice', { precision: 10, scale: 2 }),
 });
 
 export const sellers = pgTable('sellers', {
@@ -66,6 +67,9 @@ export const eventCustomers = pgTable('eventCustomers', {
   createdAt: timestamp('created_at').defaultNow(), // Added createdAt field
   sellerUuid: varchar('sellerUuid', { length: 100 }),
   reservation: boolean('reservation').default(false),
+  tombola_weight: numeric('tombola_weight'),
+  min_tombola_weight: numeric('min_tombola_weight'),
+  tombola_seller_uuid: varchar('tombola_seller_uuid', { length: 100 }),
 });
 
 export const paperTickets = pgTable('paperTickets', {

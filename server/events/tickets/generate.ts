@@ -243,3 +243,14 @@ export async function deactivateManualTicket(customerUuid: any) {
         .where(eq(paperTickets.assignedCustomer, customerUuid));
     return { success: true, message: 'Ticket deactivated successfully!' };
 }
+
+export async function deactivateManualTicketTombola(customerUuid: any) {
+    await db.update(eventCustomers)
+        .set({
+            tombola_weight: null,
+            tombola_seller_uuid: null,
+        })
+        //@ts-ignore
+        .where(eq(eventCustomers.uuid, customerUuid));
+    return { success: true, message: 'Tombola Ticket deactivated successfully!' };
+}
