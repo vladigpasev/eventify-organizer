@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { events, sellers, users } from '../../../../schema/schema';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers'
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import EventTitleEditor from '@/components/ManageEvent/EventTitle';
 import EventDescriptionEditor from '@/components/ManageEvent/EventDescriptionEditor';
@@ -85,29 +85,82 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     isSeller = true;
   }
 
+  // Ако събитието е fasching (фашинг 2025), няма да се показват определени компоненти и гридът
+  const hideComponents = params.uuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
+
   return (
     <div className="container mx-auto p-4">
-      <EventTitleEditor initialTitle={currentEvent.eventName} eventId={params.uuid} isSeller={isSeller} />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-white shadow rounded p-4 text-black">
-          <EventDescriptionEditor initialDescription={currentEvent.description} eventId={params.uuid} isSeller={isSeller} />
-          <EventThumbnailChanger initialThumbnailUrl={currentEvent.thumbnailUrl} eventId={params.uuid} isSeller={isSeller} />
-          <EventDateTimeEditor initialDateTime={currentEvent.dateTime} eventId={params.uuid} isSeller={isSeller} />
-          <LocationChanger initialLocation={currentEvent.location} eventId={params.uuid} isSeller={isSeller} />
-          <PublicPrivateToggle initialVisibility={currentEvent.visibility} eventId={params.uuid} isSeller={isSeller} />
-          <EventPriceEditor initialPrice={currentEvent.price} isFree={currentEvent.isFree} eventId={params.uuid} isSeller={isSeller} />
-        </div>
-        <UserTable eventId={params.uuid} isSeller={isSeller} userUuid={userUuid} />
-      </div>
-        <div className="bg-white shadow rounded p-4 mt-4">
-          <h2 className="text-xl font-semibold mb-3">Продавачи на билети</h2>
-          <div className=''>
-            <SellTickets eventUuid={params.uuid} isSeller={isSeller} />
+      <EventTitleEditor 
+        initialTitle={currentEvent.eventName} 
+        eventId={params.uuid} 
+        isSeller={isSeller} 
+      />
+
+      {hideComponents ? (
+        // Ако е "фашинг", не използваме грид – показваме само таблицата с потребители
+        <UserTable 
+          eventId={params.uuid} 
+          isSeller={isSeller} 
+          userUuid={userUuid} 
+        />
+      ) : (
+        // Ако не е "фашинг", използваме грид със редактори и таблица с потребители
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white shadow rounded p-4 text-black">
+            <EventDescriptionEditor
+              initialDescription={currentEvent.description}
+              eventId={params.uuid}
+              isSeller={isSeller}
+            />
+            <EventThumbnailChanger
+              initialThumbnailUrl={currentEvent.thumbnailUrl}
+              eventId={params.uuid}
+              isSeller={isSeller}
+            />
+            <EventDateTimeEditor
+              initialDateTime={currentEvent.dateTime}
+              eventId={params.uuid}
+              isSeller={isSeller}
+            />
+            <LocationChanger
+              initialLocation={currentEvent.location}
+              eventId={params.uuid}
+              isSeller={isSeller}
+            />
+            <PublicPrivateToggle
+              initialVisibility={currentEvent.visibility}
+              eventId={params.uuid}
+              isSeller={isSeller}
+            />
+            <EventPriceEditor
+              initialPrice={currentEvent.price}
+              isFree={currentEvent.isFree}
+              eventId={params.uuid}
+              isSeller={isSeller}
+            />
           </div>
+          <UserTable 
+            eventId={params.uuid} 
+            isSeller={isSeller} 
+            userUuid={userUuid} 
+          />
         </div>
-      {isSeller && (<></>) || <>
-        <DeleteEvent eventId={params.uuid} eventName={currentEvent.eventName} />
-      </>}
+      )}
+
+      <div className="bg-white shadow rounded p-4 mt-4">
+        <h2 className="text-xl font-semibold mb-3">Продавачи на билети</h2>
+        <div>
+          <SellTickets eventUuid={params.uuid} isSeller={isSeller} />
+        </div>
+      </div>
+
+      {/* DeleteEvent се показва само ако не е "фашинг" и потребителят не е създател */}
+      {(!hideComponents && !isSeller) && (
+        <DeleteEvent 
+          eventId={params.uuid} 
+          eventName={currentEvent.eventName} 
+        />
+      )}
     </div>
   );
 }

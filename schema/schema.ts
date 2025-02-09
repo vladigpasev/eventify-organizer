@@ -1,5 +1,6 @@
 //Copyright (C) 2024  Vladimir Pasev
-import { pgTable, serial, varchar, text, uuid, boolean, timestamp, numeric } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { pgTable, serial, varchar, text, uuid, boolean, timestamp, numeric, integer } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -108,3 +109,54 @@ export const ratings = pgTable('ratings', {
   rating: numeric('rating'),
   feedback: text('feedback'),
 });
+
+// ... предишното съдържание
+
+// Добавяме колона "sellerId" във fasching_requests
+export const faschingRequests = pgTable("fasching_requests", {
+  id: serial("id").primaryKey(),
+
+  paymentCode: varchar("payment_code", { length: 50 }).notNull(),
+  contactEmail: varchar("contact_email", { length: 255 }).notNull(),
+  contactPhone: varchar("contact_phone", { length: 30 }).notNull(),
+  paid: boolean("paid").notNull().default(false),
+
+  // Колона за идентификатор на продавача (кой е маркирал поръчката като платена)
+  sellerId: varchar("seller_id", { length: 100 }), // може да е nullable
+
+  // Новите колони за съгласия
+  agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
+  agreedToPrivacy: boolean("agreed_to_privacy").notNull().default(false),
+  agreedToCookies: boolean("agreed_to_cookies").notNull().default(false),
+
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  deleted: boolean("deleted").notNull().default(false),
+});
+
+export const faschingTickets = pgTable("fasching_tickets", {
+  id: serial("id").primaryKey(),
+  requestId: integer("request_id")
+    .references(() => faschingRequests.id)
+    .notNull(),
+  ticketType: varchar("ticket_type", { length: 20 }).notNull(),
+  guestFirstName: varchar("guest_first_name", { length: 255 }).notNull(),
+  guestLastName: varchar("guest_last_name", { length: 255 }).notNull(),
+  guestEmail: varchar("guest_email", { length: 255 }).notNull(),
+  guestClassGroup: varchar("guest_class_group", { length: 50 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+
+  // Колона за 10-цифрения код на билета
+  ticketCode: varchar("ticket_code", { length: 10 }), 
+});
+
+// Rелaции (не се променят съществено)
+export const faschingRequestsRelations = relations(faschingRequests, ({ many }) => ({
+  tickets: many(faschingTickets),
+}));
+
+export const faschingTicketsRelations = relations(faschingTickets, ({ one }) => ({
+  request: one(faschingRequests, {
+    fields: [faschingTickets.requestId],
+    references: [faschingRequests.id],
+  }),
+}));

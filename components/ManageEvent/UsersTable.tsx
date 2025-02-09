@@ -7,7 +7,7 @@ import { getUsers } from '@/server/events/getUsers';
 import AddCustomer from './AddCustomer';
 import CheckTicket from './CheckTickets';
 import SendEmailToAll from './SendEmailToAll';
-import { getCurrentLimit, changeLimit } from '@/server/events/limit'; // Import the necessary functions
+import { getCurrentLimit, changeLimit } from '@/server/events/limit';
 import { getCurrentTombolaPrice, changeTombolaPrice } from '@/server/events/tombola_price';
 
 export const maxDuration = 300;
@@ -46,9 +46,13 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   const [tombolaPrice, setTombolaPrice] = useState<string | null>(null);
   const [isTombolaPriceChanged, setIsTombolaPriceChanged] = useState<boolean>(false);
 
+  // Проверка дали събитието е "фашинг"
+  const isFasching = eventId === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
+
   const enteredCount = users.filter(user => user.isEntered).length;
   const reservationCount = users.filter(user => user.reservation).length;
-  const ticketCount = users.length - reservationCount;
+  // При фашинг guestCount не се използва – за останалите броим като обикновено
+  const ticketCount = isFasching ? users.length : users.length - reservationCount;
 
   const fetchUsers = async () => {
     try {
@@ -118,14 +122,18 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 
   useEffect(() => {
     fetchUsers();
-    fetchLimit();
-    fetchTombolaPrice();
-  }, [eventId]);
+    // Ако не е фашинг, извличаме лимита и цената на томболата
+    if (!isFasching) {
+      fetchLimit();
+      fetchTombolaPrice();
+    }
+  }, [eventId, isFasching]);
 
   useEffect(() => {
     const filtered = users.filter(user => {
       const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
       const sellerFullName = user.sellerName ? `${user.sellerName} (${user.sellerEmail})`.toLowerCase() : '';
+      // При фашинг игнорираме guestCount, тъй като колоната няма да се показва
       const combinedSearch = `${fullName} ${user.email} ${user.paperTicket || ''} ${sellerFullName}`;
       return combinedSearch.includes(searchTerm.toLowerCase());
     });
@@ -139,75 +147,110 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
       <div className='flex justify-between items-center'>
         <h2 className="text-xl font-semibold mb-3">Билети</h2>
         <div className='flex gap-2 sm:flex-row flex-col'>
-          <AddCustomer eventId={eventId} onCustomerAdded={fetchUsers} userUuid={userUuid} />
+          {/* Ако е фашинг, бутонът "Създай билет" ще се показва с етикет "Събери пари" */}
+          <AddCustomer 
+            eventId={eventId} 
+            onCustomerAdded={fetchUsers} 
+            userUuid={userUuid} 
+            buttonLabel={isFasching ? "Събери пари" : "Създай билет"} 
+          />
           <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers} />
-          <a href={`/dashboard/events/${eventId}/tombola`} className='btn'>Томбола</a>
+          {/* Премахваме бутона за томбола, ако е фашинг */}
+          {!isFasching && (
+            <a href={`/dashboard/events/${eventId}/tombola`} className='btn'>Томбола</a>
+          )}
         </div>
       </div>
-      {isSeller && (
-        <div>
-          <div className='pb-5'><strong>Лимит на билетите: {limit || 'няма'}</strong></div>
-          <div className='pb-5'><strong>Цена на билет от томболата: {tombolaPrice || 'няма'}</strong></div>
-        </div>
-      ) || (
-        <div>
-          <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
-            <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Лимит на билетите (оставете празно, ако няма):</label>
-            <input
-              type="number"
-              id="limit-input"
-              aria-describedby="helper-text-explanation"
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Няма лимит"
-              min={0}
-              value={limit || ''}
-              onChange={handleLimitChange}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary mt-2"
-              disabled={!isLimitChanged || limitLoading}
-            >
-              {limitLoading ? 'Зареждане...' : 'Промени лимита'}
-            </button>
-          </form>
-          <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleTombolaPriceSubmit(); }}>
-            <label htmlFor="tombola-price-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Цена на томбола (оставете празно, ако няма):</label>
-            <input
-              type="number"
-              id="tombola-price-input"
-              aria-describedby="helper-text-explanation"
-              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Няма томбола"
-              min={0}
-              value={tombolaPrice || ''}
-              onChange={handleTombolaPriceChange}
-            />
-            <button
-              type="submit"
-              className="btn btn-primary mt-2"
-              disabled={!isTombolaPriceChanged || limitLoading}
-            >
-              {limitLoading ? 'Зареждане...' : 'Промени цената на томболата'}
-            </button>
-          </form>
-        </div>
+      
+      {/* Показваме лимита и цената само ако не е фашинг */}
+      {!isFasching && (
+        isSeller ? (
+          <div>
+            <div className='pb-5'>
+              <strong>Лимит на билетите: {limit || 'няма'}</strong>
+            </div>
+            <div className='pb-5'>
+              <strong>Цена на билет от томболата: {tombolaPrice || 'няма'}</strong>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
+              <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Лимит на билетите (оставете празно, ако няма):
+              </label>
+              <input
+                type="number"
+                id="limit-input"
+                aria-describedby="helper-text-explanation"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Няма лимит"
+                min={0}
+                value={limit || ''}
+                onChange={handleLimitChange}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary mt-2"
+                disabled={!isLimitChanged || limitLoading}
+              >
+                {limitLoading ? 'Зареждане...' : 'Промени лимита'}
+              </button>
+            </form>
+            <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleTombolaPriceSubmit(); }}>
+              <label htmlFor="tombola-price-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                Цена на томбола (оставете празно, ако няма):
+              </label>
+              <input
+                type="number"
+                id="tombola-price-input"
+                aria-describedby="helper-text-explanation"
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                placeholder="Няма томбола"
+                min={0}
+                value={tombolaPrice || ''}
+                onChange={handleTombolaPriceChange}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary mt-2"
+                disabled={!isTombolaPriceChanged || limitLoading}
+              >
+                {limitLoading ? 'Зареждане...' : 'Промени цената на томболата'}
+              </button>
+            </form>
+          </div>
+        )
       )}
-      {isLoading ? <>Зареждане...</> :
+      
+      {isLoading ? (
+        <>Зареждане...</>
+      ) : (
         <>
           {isSeller || (
-            <div><SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} /></div>
+            <div>
+              <SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} />
+            </div>
           )}
           <div className="mb-4">
-            <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
-              {ticketCount} Билети
-            </span>
-            <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
-              {reservationCount} Резервации
-            </span>
-            <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-800">
-              {enteredCount} влeзли
-            </span>
+            {isFasching ? (
+              // При фашинг показваме общия брой билети (без резервации и гост брой)
+              <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
+                {ticketCount} Билети
+              </span>
+            ) : (
+              <>
+                <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
+                  {ticketCount} Билети
+                </span>
+                <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-blue-200 dark:text-blue-800">
+                  {reservationCount} Резервации
+                </span>
+                <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded dark:bg-green-200 dark:text-green-800">
+                  {enteredCount} влeзли
+                </span>
+              </>
+            )}
           </div>
           <div className="mb-4">
             <input
@@ -219,58 +262,144 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
             />
           </div>
           <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Име</th>
-                  <th>Имейл</th>
-                  <th>Брой гости</th>
-                  <th>Хартиен билет</th>
-                  <th>Продавач</th>
-                  <th>Дата и час на издаване</th>
-                  <th></th>
-                  <th></th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((customer, index) => (
-                  <tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
+            {isFasching ? (
+              // Таблица за фашинг – колони: (празно, Име, Имейл, Клас, Плащане код, Дата и час, действия...)
+              <table className="table">
+                <thead>
+                  <tr>
                     <th></th>
-                    <td>
-                      <div className="flex items-center">
-                        <div className="avatar"></div>
-                        <div>
-                          <div className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}>{`${customer.firstname} ${customer.lastname}`}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{customer.email}</td>
-                    <td>{customer.guestCount}</td>
-                    <td>{customer.paperTicket || 'няма'}</td>
-                    <td>{customer.sellerName} ({customer.sellerEmail})</td>
-                    <td>{customer.createdAt}</td>
-                    <th>
-                      <Link className="btn btn-ghost btn-xs text-black" href={`https://tickets.eventify.bg/` + customer.ticketToken} target='_blank'>
-                        <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill='currentColor' />
-                        </svg>
-                      </Link>
-                    </th>
-                    <th>
-                      <TicketActionsBtn ticketToken={customer.ticketToken} eventId={eventId} onEnteredOrExited={fetchUsers} />
-                    </th>
-                    <th>
-                      <TicketDeactivateBtn customerUuid={customer.uuid} disabled={!customer.sellerCurrent && isSeller} />
-                    </th>
+                    <th>Име</th>
+                    <th>Имейл</th>
+                    <th>Клас</th>
+                    <th>Плащане код</th>
+                    <th>Дата и час на издаване</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((customer, index) => (
+                    <tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
+                      <th></th>
+                      <td>
+                        <div className="flex items-center">
+                          <div className="avatar"></div>
+                          <div>
+                            <div className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}>
+                              {`${customer.firstname} ${customer.lastname}`}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{customer.email}</td>
+                      <td>{customer.paperTicket || 'няма'}</td>
+                      <td>{customer.ticketToken}</td>
+                      <td>{customer.createdAt}</td>
+                      { customer.reservation ? (
+                        // Ако е резервация при фашинг – всички бутони са неактивни
+                        <>
+                          <th>
+                            <button className="btn btn-ghost btn-xs text-black" disabled title="Резервация">
+                              <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill="currentColor" />
+                              </svg>
+                            </button>
+                          </th>
+                          <th>
+                            <button className="btn btn-ghost btn-xs text-black" disabled title="Резервация">
+                              <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill="currentColor" />
+                              </svg>
+                            </button>
+                          </th>
+                          <th>
+                            <button className="btn btn-ghost btn-xs text-black" disabled title="Резервация">
+                              <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill="currentColor" />
+                              </svg>
+                            </button>
+                          </th>
+                        </>
+                      ) : (
+                        // Ако не е резервация – показваме нормалните бутони
+                        <>
+                          <th>
+                            <Link className="btn btn-ghost btn-xs text-black" href={`https://tickets.eventify.bg/` + customer.ticketToken} target='_blank'>
+                              <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill="currentColor" />
+                              </svg>
+                            </Link>
+                          </th>
+                          <th>
+                            <TicketActionsBtn ticketToken={customer.ticketToken} eventId={eventId} onEnteredOrExited={fetchUsers} />
+                          </th>
+                          <th>
+                            <TicketDeactivateBtn customerUuid={customer.uuid} disabled={!customer.sellerCurrent && isSeller} />
+                          </th>
+                        </>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              // Оригинална таблица за не фашинг – тук бутоните работят нормално, дори и при резервации
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Име</th>
+                    <th>Имейл</th>
+                    <th>Брой гости</th>
+                    <th>Хартиен билет</th>
+                    <th>Продавач</th>
+                    <th>Дата и час на издаване</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((customer, index) => (
+                    <tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
+                      <th></th>
+                      <td>
+                        <div className="flex items-center">
+                          <div className="avatar"></div>
+                          <div>
+                            <div className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}>
+                              {`${customer.firstname} ${customer.lastname}`}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td>{customer.email}</td>
+                      <td>{customer.guestCount}</td>
+                      <td>{customer.paperTicket || 'няма'}</td>
+                      <td>{customer.sellerName} ({customer.sellerEmail})</td>
+                      <td>{customer.createdAt}</td>
+                      <th>
+                        <Link className="btn btn-ghost btn-xs text-black" href={`https://tickets.eventify.bg/` + customer.ticketToken} target='_blank'>
+                          <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z" fill="currentColor" />
+                          </svg>
+                        </Link>
+                      </th>
+                      <th>
+                        <TicketActionsBtn ticketToken={customer.ticketToken} eventId={eventId} onEnteredOrExited={fetchUsers} />
+                      </th>
+                      <th>
+                        <TicketDeactivateBtn customerUuid={customer.uuid} disabled={!customer.sellerCurrent && isSeller} />
+                      </th>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </>
-      }
+      )}
     </div>
   );
 };
