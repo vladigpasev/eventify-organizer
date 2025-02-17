@@ -74,6 +74,7 @@ export async function addSeller(data: any) {
         }).execute();
 
         let transporter = nodemailer.createTransport({
+            //@ts-ignore
             host: process.env.EMAIL_SERVER_HOST,
             port: process.env.EMAIL_SERVER_PORT,
             secure: false,
