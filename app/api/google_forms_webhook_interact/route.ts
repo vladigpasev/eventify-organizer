@@ -158,13 +158,16 @@ async function sendTicketEmail({ email, customerName, eventName, ticketToken, th
         const qrCodeBuffer = Buffer.from(qrCodeDataURL.split("base64,")[1], "base64");
 
         const transporter = nodemailer.createTransport({
-            service: 'gmail',
+            host: process.env.EMAIL_SERVER_HOST,
+            port: process.env.EMAIL_SERVER_PORT,
+            secure: false,
             auth: {
-                type: 'OAuth2',
+
                 user: process.env.EMAIL_SERVER_USER,
-                clientId: process.env.EMAIL_CLIENT_ID,
-                clientSecret: process.env.EMAIL_CLIENT_SECRET,
-                refreshToken: process.env.EMAIL_REFRESH_TOKEN,
+                pass: process.env.EMAIL_SERVER_PASSWORD,
+            },
+            tls: {
+                ciphers: 'SSLv3'
             }
         });
 

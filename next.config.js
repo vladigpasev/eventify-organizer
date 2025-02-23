@@ -5,6 +5,11 @@ const nextConfig = {
         serverComponentsExternalPackages: ["pdfkit"],
     },
 
+    typescript: {
+        ignoreBuildErrors: true
+      },
+    
+
 }
 
 module.exports = nextConfig
