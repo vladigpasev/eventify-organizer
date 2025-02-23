@@ -112,14 +112,13 @@ export async function sendFaschingTicketEmail({
         </div>
         <div class="content">
           <p>Здравейте, <strong>${guestFirstName} ${guestLastName}</strong>!</p>
-          <p>Вашият билет е потвърден и платен. Моля, вижте прикачения баркод като билет.</p>
+          <p>Вашият билет за ${typeLabel} 2025 е потвърден и платен. Можете да го отворите, като натиснете бутона по-долу.</p>
           <p><strong>Код на билета:</strong> ${ticketCode}</p>
-          <p>Също така можете да последвате този линк, за да видите билета онлайн:</p>
           <p><a class="btn" href="${ticketUrl}" target="_blank">Преглед на билета</a></p>
           <p>Очакваме ви с нетърпение!</p>
         </div>
         <div class="footer">
-          <p>© 2024 Eventify BG</p>
+          <p>© 2025 Eventify BG</p>
         </div>
       </div>
     </body>
