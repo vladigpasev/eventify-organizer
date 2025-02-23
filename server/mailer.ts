@@ -77,7 +77,7 @@ async function generateTicketPdf({
       // 5) Регистрираме OpenSans.ttf
       doc.registerFont(
         "OpenSans",
-        path.join(process.cwd(), "public", "fonts", "opensans.ttf")
+        path.join(process.cwd(), "opensans.ttf")
       );
 
       // 6) Нова страница с margin
