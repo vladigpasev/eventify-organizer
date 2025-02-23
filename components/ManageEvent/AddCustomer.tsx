@@ -103,7 +103,7 @@ function AddCustomer({
         const response = await checkPaperToken({ eventUuid: eventId, token: result });
         if (response.success) {
           setPaperTicketAccessToken(result);
-          setNineDigitCode(response.currentCustomer.nineDigitCode);
+          setNineDigitCode(response.currentCustomer?.nineDigitCode || null);
           setQrScannerOpen(false);
           setErrorMessage('');
         } else {
@@ -221,7 +221,7 @@ function AddCustomer({
         setIsPaymentLoading(false);
         return;
       }
-      setChangeAmount(resp.change);
+      setChangeAmount(resp.change ?? 0);
       setShowPaymentSuccess(true);
       onCustomerAdded();
     } catch (error) {
@@ -515,6 +515,20 @@ export default AddCustomer;
 /**
  * Оригиналната форма за НЕ-фашинг
  */
+interface NonFaschingModalProps {
+  toggleModal: () => void;
+  eventId: string;
+  onCustomerAdded: () => void;
+  paperTicketAccessToken: string | null;
+  nineDigitCode: string | null;
+  setQrScannerOpen: (open: boolean) => void;
+  handleDeletePaperTicket: () => void;
+  errorMessage: string;
+  setPaperTicketAccessToken: (token: string | null) => void;
+  userUuid: string;
+  buttonLabel?: string;
+}
+
 function NonFaschingModal({
   toggleModal,
   eventId,
@@ -527,7 +541,7 @@ function NonFaschingModal({
   setPaperTicketAccessToken,
   userUuid,
   buttonLabel
-}) {
+}: NonFaschingModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const router = useRouter();

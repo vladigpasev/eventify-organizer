@@ -81,15 +81,10 @@ export async function approveWinners({ eventUuid, winners }: { eventUuid: string
         const event = eventDb[0];
 
         let transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_SERVER_HOST,
-            port: process.env.EMAIL_SERVER_PORT,
-            secure: false,
+            service: 'gmail',
             auth: {
                 user: process.env.EMAIL_SERVER_USER,
                 pass: process.env.EMAIL_SERVER_PASSWORD,
-            },
-            tls: {
-                ciphers: 'SSLv3'
             }
         });
 

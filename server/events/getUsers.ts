@@ -111,7 +111,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
     // Преобразуваме към нашия интерфейс Customer
     const formatted = faschingTicketsDb.map(row => {
       // Форматираме датата (ако искате форматиране "dd.mm.yyyy, HH:MM:SS")
-      const rawDate = new Date(row.requestCreatedAt);
+      const rawDate = row.requestCreatedAt ? new Date(row.requestCreatedAt) : new Date();
       const options: Intl.DateTimeFormatOptions = {
         timeZone: 'Europe/Sofia',
         year: 'numeric',
@@ -222,19 +222,19 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       : { fullName: null, email: null };
 
     return {
-      uuid: customer.uuid,
+      uuid: customer.uuid || '',
       firstname: customer.firstname,
       lastname: customer.lastname,
       email: customer.email,
-      guestCount: customer.guestCount,
-      ticketToken: customer.ticketToken,
-      isEntered: customer.isEntered,
+      guestCount: Number(customer.guestCount),
+      ticketToken: customer.ticketToken || '',
+      isEntered: customer.isEntered ?? false,
       paperTicket: customer.paperTicket,
       createdAt: formattedCreatedAt,
       sellerName: sellerData.fullName,
       sellerEmail: sellerData.email,
       sellerCurrent: customer.sellerUuid === userUuid,
-      reservation: customer.reservation,
+      reservation: customer.reservation ?? false,
     } satisfies Customer;
   });
 
