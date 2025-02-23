@@ -9,8 +9,8 @@ import { sendFaschingTicketEmail } from '@/server/mailer';
 const db = drizzle(sql);
 
 const TICKET_PRICES = {
-  fasching: 12,
-  fasching_after: 27,
+  fasching: 10,
+  fasching_after: 25,
 };
 
 function normalizeTicketType(type: string) {

@@ -415,10 +415,10 @@ function AddCustomer({
 
                       <div className="bg-white border rounded p-3 shadow space-y-2">
                         <p className="font-semibold text-gray-800">
-                          Брой Фашинг: {faschingCount} × 12 лв
+                          Брой Фашинг: {faschingCount} × 10 лв
                         </p>
                         <p className="font-semibold text-gray-800">
-                          Брой Фашинг + Афтър: {faschingAfterCount} × 27 лв
+                          Брой Фашинг + Афтър: {faschingAfterCount} × 25 лв
                         </p>
                         <p className="font-bold text-lg text-gray-900 border-t pt-2 mt-2">
                           Общо дължимо: {totalDue} лв
