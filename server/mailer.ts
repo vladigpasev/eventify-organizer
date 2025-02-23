@@ -75,7 +75,7 @@ async function generateTicketPdf({
       doc.on("end", () => resolve(Buffer.concat(buffers)));
 
       // 5) Регистрираме OpenSans.ttf
-      const fontPath = path.join(__dirname, "fonts", "opensans.ttf");
+      const fontPath = path.join(process.cwd(), "public", "fonts", "opensans.ttf");
       doc.registerFont("OpenSans", fontPath);
 
 
