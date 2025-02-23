@@ -75,10 +75,9 @@ async function generateTicketPdf({
       doc.on("end", () => resolve(Buffer.concat(buffers)));
 
       // 5) Регистрираме OpenSans.ttf
-      doc.registerFont(
-        "OpenSans",
-        path.join(process.cwd(), "opensans.ttf")
-      );
+      const fontPath = path.join(__dirname, "fonts", "opensans.ttf");
+      doc.registerFont("OpenSans", fontPath);
+
 
       // 6) Нова страница с margin
       doc.addPage({
@@ -107,7 +106,7 @@ async function generateTicketPdf({
       doc
         .fontSize(26)
         .fillColor("#da3c3c")
-        .text(typeLabel.toUpperCase()+" 2025", { align: "center" })
+        .text(typeLabel.toUpperCase() + " 2025", { align: "center" })
         .moveDown(0.5);
 
 
