@@ -75,8 +75,14 @@ async function generateTicketPdf({
       doc.on("end", () => resolve(Buffer.concat(buffers)));
 
       // 5) Регистрираме OpenSans.ttf
-      const fontPath = path.join(process.cwd(), "public", "fonts", "opensans.ttf");
-      doc.registerFont("OpenSans", fontPath);
+      const fontUrl = "https://organize.eventify.bg/fonts/opensans.ttf";
+      const fontRes = await fetch(fontUrl);
+      if (!fontRes.ok) {
+        throw new Error(`Не успяхме да свалим шрифта от ${fontUrl}`);
+      }
+      const fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+      doc.registerFont("OpenSans", fontBuffer);
+
 
 
       // 6) Нова страница с margin
