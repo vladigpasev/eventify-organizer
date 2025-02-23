@@ -1,0 +1,2 @@
+ALTER TABLE "fasching_tickets" ADD COLUMN "entered_fasching" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "fasching_tickets" ADD COLUMN "entered_after" boolean DEFAULT false NOT NULL;

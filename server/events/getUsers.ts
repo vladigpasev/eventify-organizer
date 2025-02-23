@@ -24,6 +24,8 @@ interface Customer {
   sellerEmail: string | null;
   sellerCurrent: boolean;
   reservation: boolean;
+  ticketCode?: string;      // Ако искате да добавите ticketCode
+  ticket_type?: string;
   // Ако искате да групирате, може да добавите и requestId: number; например
 }
 
@@ -98,6 +100,8 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       requestDeleted: faschingRequests.deleted,
       paymentCode: faschingRequests.paymentCode,
       requestCreatedAt: faschingRequests.createdAt,
+      ticketCode: faschingTickets.ticketCode,
+      ticket_type: faschingTickets.ticketType,
     })
     .from(faschingTickets)
     .innerJoin(
@@ -127,22 +131,23 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         .replace(',', '');
 
       return {
-        // Превръщаме данните във формата, който ползва вашата таблица
         uuid: String(row.ticketId),
         firstname: row.guestFirstName,
         lastname: row.guestLastName,
         email: row.guestEmail,
-        guestCount: 1,               // Ако искате да ползвате броя гости, тук винаги е 1
-        ticketToken: row.paymentCode, // Тук слагаме paymentCode, за да се вижда в колоната за token
-        isEntered: false,           // Ако не ползвате "влизане/излизане" за фашинг, винаги false
-        paperTicket: row.guestClass, // Тук ще се показва класа (guestClassGroup)
+        guestCount: 1,
+        ticketToken: row.paymentCode,
+        isEntered: false,
+        paperTicket: row.guestClass,
         createdAt: formattedCreatedAt,
         sellerName: null,
         sellerEmail: null,
         sellerCurrent: false,
-        reservation: !row.requestPaid, // Ако не е платено, => reservation = true
-        // requestId: row.requestId,   // Ако ви трябва идентификатор за групиране в UI
+        reservation: !row.requestPaid,
+        ticketCode: row.ticketCode,      // добавете това
+        ticket_type: row.ticket_type,    // и това
       } satisfies Customer;
+      
     });
 
     return formatted;

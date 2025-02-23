@@ -133,21 +133,27 @@ export const faschingRequests = pgTable("fasching_requests", {
   deleted: boolean("deleted").notNull().default(false),
 });
 
+// Примерно:
 export const faschingTickets = pgTable("fasching_tickets", {
   id: serial("id").primaryKey(),
   requestId: integer("request_id")
     .references(() => faschingRequests.id)
     .notNull(),
-  ticketType: varchar("ticket_type", { length: 20 }).notNull(),
+  ticketType: varchar("ticket_type", { length: 20 }).notNull(),    // fasching | fasching_after
   guestFirstName: varchar("guest_first_name", { length: 255 }).notNull(),
   guestLastName: varchar("guest_last_name", { length: 255 }).notNull(),
   guestEmail: varchar("guest_email", { length: 255 }).notNull(),
   guestClassGroup: varchar("guest_class_group", { length: 50 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 
-  // Колона за 10-цифрения код на билета
-  ticketCode: varchar("ticket_code", { length: 10 }), 
+  // 10-цифрен код
+  ticketCode: varchar("ticket_code", { length: 10 }),
+
+  // ➜ Новите полета:
+  entered_fasching: boolean("entered_fasching").notNull().default(false),
+  entered_after: boolean("entered_after").notNull().default(false),
 });
+
 
 // Rелaции (не се променят съществено)
 export const faschingRequestsRelations = relations(faschingRequests, ({ many }) => ({
