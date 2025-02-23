@@ -76,11 +76,18 @@ async function generateTicketPdf({
 
       // 5) Регистрираме OpenSans.ttf
       const fontUrl = "https://organize.eventify.bg/fonts/opensans.ttf";
-      const fontRes = await fetch(fontUrl);
+      const fontRes = await fetch(fontUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' } // Добавяме User-Agent, за да изглежда заявката по-браузърна
+      });
       if (!fontRes.ok) {
         throw new Error(`Не успяхме да свалим шрифта от ${fontUrl}`);
       }
-      const fontBuffer = Buffer.from(await fontRes.arrayBuffer());
+      const arrayBuffer = await fontRes.arrayBuffer();
+      const fontBuffer = Buffer.from(arrayBuffer);
+
+      // Логваме първите 4 байта за проверка (валиден TTF трябва да започва с 0x00, 0x01, 0x00, 0x00 или с "OTTO")
+      console.log("Първи 4 байта от шрифта:", fontBuffer.slice(0, 4));
+
       doc.registerFont("OpenSans", fontBuffer);
 
 
