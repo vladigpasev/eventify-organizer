@@ -31,12 +31,16 @@ interface Customer {
   sellerName: string | null;
   sellerEmail: string | null;
   sellerCurrent: boolean;
-  reservation: boolean;
+  reservation: boolean;       // => при Фашинг означава "неплатено"
   ticketCode?: string;
   ticket_type?: string;
   guestSchoolName?: string | null;
   guestExternalGrade?: string | null;
   expiresSoon?: boolean;
+
+  // Полета за Фашинг
+  isEnteredFasching?: boolean; 
+  isEnteredAfter?: boolean;
 }
 
 const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
@@ -54,11 +58,22 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   // Проверка дали събитието е "фашинг"
   const isFasching = eventId === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
 
-  // При фашинг: reservation = (paid=false) => брой билети = users.length (нямаме guestCount)
-  // Иначе: брой билети = users.length - reservationCount
+  // Базовите статистики (ако не е фашинг)
   const enteredCount = users.filter(user => user.isEntered).length;
   const reservationCount = users.filter(user => user.reservation).length;
-  const ticketCount = isFasching ? users.length : users.length - reservationCount;
+  const ticketCount = users.length;
+
+  // Допълнителни статистики за фашинг
+  let faschingPaidCount = 0;             // общо платени
+  let faschingEnteredFasching = 0;       // entered_fasching
+  let faschingEnteredAfter = 0;          // entered_after
+  let faschingEnteredBoth = 0;           // влязъл и в двете
+  if (isFasching) {
+    faschingPaidCount = users.filter(u => !u.reservation).length;
+    faschingEnteredFasching = users.filter(u => u.isEnteredFasching).length;
+    faschingEnteredAfter = users.filter(u => u.isEnteredAfter).length;
+    faschingEnteredBoth = users.filter(u => u.isEnteredFasching && u.isEnteredAfter).length;
+  }
 
   const fetchUsers = async () => {
     try {
@@ -126,9 +141,8 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     setIsTombolaPriceChanged(true);
   };
 
-  // Функция за сортиране на Фашинг класове
+  // Подредба на фашинг класовете
   function getFaschingClassPriority(customer: Customer): number {
-    // Подредба: 8а, 8б, 8в, 8г, 8д, 8е, 8ж, 9а ... 12ж
     const classesOrder = [
       "8а","8б","8в","8г","8д","8е","8ж",
       "9а","9б","9в","9г","9д","9е","9ж",
@@ -139,40 +153,73 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 
     const cGroup = customer.paperTicket || "";
 
-    // Ако е в класовете, връщаме индекса
+    // Ако е в списъка -> index
     const foundIndex = classesOrder.indexOf(cGroup);
     if (foundIndex >= 0) {
       return foundIndex;
     }
 
-    // Ако е "external-guest"
+    // external-guest
     if (cGroup === "external-guest") {
       const gradeNum = Number(customer.guestExternalGrade);
       if (!isNaN(gradeNum) && gradeNum >= 8 && gradeNum <= 12) {
-        // 8 => 100, 9 => 101, ..., 12 => 104
         return 100 + (gradeNum - 8);
       }
-      // Ако не е (adult?), даваме 105
-      return 105;
+      return 105; // adult
     }
 
-    // Ако е "adult"
+    // adult
     if (cGroup === "adult") {
       return 200;
     }
-
-    // Ако е "teacher"
+    // teacher
     if (cGroup === "teacher") {
       return 300;
     }
-
-    // Иначе най-отзад
+    // default
     return 999;
+  }
+
+  // Определя цвета на реда (само при фашинг)
+  function getFaschingRowColor(customer: Customer): string {
+    // 1) Ако е неплатен (reservation = true) -> червен фон
+    if (customer.reservation) {
+      return 'bg-red-100';
+    }
+    // 2) Платен
+    const f = customer.isEnteredFasching;
+    const a = customer.isEnteredAfter;
+    if (f && a) {
+      return 'bg-purple-100';
+    } else if (f) {
+      return 'bg-green-100';
+    } else if (a) {
+      return 'bg-blue-100';
+    }
+    // Платен, но не е влязъл
+    return '';
+  }
+
+  // Колона "Статус" за Фашинг
+  function getFaschingEntryStatus(customer: Customer): string {
+    const f = customer.isEnteredFasching;
+    const a = customer.isEnteredAfter;
+    if (customer.reservation) {
+      return 'Неплатен';
+    }
+    if (f && a) {
+      return 'Влязъл и във Fasching, и в After';
+    } else if (f) {
+      return 'Влязъл във Fasching';
+    } else if (a) {
+      return 'Влязъл в After';
+    } else {
+      return 'Платен, но не е влязъл';
+    }
   }
 
   useEffect(() => {
     fetchUsers();
-    // Ако не е фашинг, извличаме лимита и цената на томболата
     if (!isFasching) {
       fetchLimit();
       fetchTombolaPrice();
@@ -180,7 +227,7 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   }, [eventId, isFasching]);
 
   useEffect(() => {
-    // 1) Филтриране по searchTerm
+    // 1) Филтриране
     const lowerSearch = searchTerm.toLowerCase();
     const filtered = users.filter(user => {
       const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
@@ -190,35 +237,30 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
       const ticketCode = user.ticketCode || '';
       const ticketType = user.ticket_type || '';
       const combinedSearch = `${fullName} ${user.email} ${user.paperTicket || ''} ${sellerFullName} ${ticketCode} ${ticketType}`;
-
       return combinedSearch.includes(lowerSearch);
     });
 
     // 2) Сортиране
     let sorted: Customer[];
     if (isFasching) {
-      // Специална подредба за Фашинг
       sorted = [...filtered].sort((a, b) => {
-        // 1) група (classPriority)
+        // 1) клас
         const groupA = getFaschingClassPriority(a);
         const groupB = getFaschingClassPriority(b);
-        if (groupA !== groupB) {
-          return groupA - groupB;
-        }
-        // 2) азбучно по име + фамилия
+        if (groupA !== groupB) return groupA - groupB;
+
+        // 2) име
         const nameA = (a.firstname + " " + a.lastname).toLowerCase();
         const nameB = (b.firstname + " " + b.lastname).toLowerCase();
         return nameA.localeCompare(nameB);
       });
     } else {
-      // Ако не е фашинг, може просто по име и фамилия
       sorted = [...filtered].sort((a, b) => {
         const nameA = (a.firstname + " " + a.lastname).toLowerCase();
         const nameB = (b.firstname + " " + b.lastname).toLowerCase();
         return nameA.localeCompare(nameB);
       });
     }
-
     setFilteredUsers(sorted);
   }, [searchTerm, users, isFasching]);
 
@@ -229,7 +271,7 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
       <div className='flex justify-between items-center'>
         <h2 className="text-xl font-semibold mb-3">Билети</h2>
         <div className='flex gap-2 sm:flex-row flex-col'>
-          {/* Ако е фашинг, бутонът "Създай билет" ще се показва с етикет "Събери пари" */}
+          {/* Ако е фашинг, бутонът "Създай билет" -> "Събери пари" */}
           <AddCustomer 
             eventId={eventId} 
             onCustomerAdded={fetchUsers} 
@@ -237,14 +279,12 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
             buttonLabel={isFasching ? "Събери пари" : "Създай билет"} 
           />
           <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers} />
-          {/* Премахваме бутона за томбола, ако е фашинг */}
           {!isFasching && (
             <a href={`/dashboard/events/${eventId}/tombola`} className='btn'>Томбола</a>
           )}
         </div>
       </div>
       
-      {/* Показваме лимита и цената само ако не е фашинг */}
       {!isFasching && (
         isSeller ? (
           <div>
@@ -264,7 +304,6 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
               <input
                 type="number"
                 id="limit-input"
-                aria-describedby="helper-text-explanation"
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
                            focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                 placeholder="Няма лимит"
@@ -288,7 +327,6 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
               <input
                 type="number"
                 id="tombola-price-input"
-                aria-describedby="helper-text-explanation"
                 className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
                            focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
                 placeholder="Няма томбола"
@@ -312,33 +350,48 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
         <>Зареждане...</>
       ) : (
         <>
-          {/* Премахваме бутона за изпращане на имейл при фашинг */}
+          {/* При не-фашинг -> бутона "Изпрати имейл" */}
           {!isSeller && !isFasching && (
             <div>
               <SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} />
             </div>
           )}
 
-          <div className="mb-4">
-            {isFasching ? (
-              // При фашинг показваме общия брой билети (без резервации и guestCount)
-              <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
-                {ticketCount} Билети
+          {/* Статистика само за фашинг */}
+          {isFasching && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded">
+                Общо билети: {ticketCount}
               </span>
-            ) : (
-              <>
-                <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
-                  {ticketCount} Билети
-                </span>
-                <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
-                  {reservationCount} Резервации
-                </span>
-                <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
-                  {enteredCount} влeзли
-                </span>
-              </>
-            )}
-          </div>
+              <span className="bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded">
+                Платени: {faschingPaidCount}
+              </span>
+              <span className="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">
+                Влязли (Fasching): {faschingEnteredFasching}
+              </span>
+              <span className="bg-yellow-100 text-yellow-800 text-sm font-semibold px-2.5 py-0.5 rounded">
+                Влязли (After): {faschingEnteredAfter}
+              </span>
+              <span className="bg-purple-100 text-purple-800 text-sm font-semibold px-2.5 py-0.5 rounded">
+                Влязли (Fasching & After): {faschingEnteredBoth}
+              </span>
+            </div>
+          )}
+
+          {/* Статистика при не-фашинг */}
+          {!isFasching && (
+            <div className="mb-4">
+              <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
+                {ticketCount - reservationCount} Билети
+              </span>
+              <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
+                {reservationCount} Резервации
+              </span>
+              <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
+                {enteredCount} влeзли
+              </span>
+            </div>
+          )}
 
           <div className="mb-4">
             <input
@@ -352,7 +405,7 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 
           <div className="overflow-x-auto">
             {isFasching ? (
-              // Новата таблица за фашинг
+              // Таблицата за фашинг
               <table className="table">
                 <thead>
                   <tr>
@@ -365,30 +418,24 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
                     <th>Код на билета</th>
                     <th>Тип на билета</th>
                     <th>Дата и час на издаване</th>
+                    <th>Статус</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map((customer, index) => {
+                    // Взимаме цвета
+                    const rowColor = getFaschingRowColor(customer);
                     return (
-                      <tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
+                      <tr key={index} className={rowColor}>
                         <td>
                           <div className="flex items-center">
-                            <div>
-                              <div
-                                className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}
-                              >
-                                {customer.expiresSoon && (
-                                  <span className="text-red-500 ml-1">❗</span>
-                                )}
-                                {customer.firstname} {customer.lastname}
-                                
-                              </div>
+                            <div className="font-bold">
+                              {customer.firstname} {customer.lastname}
                             </div>
                           </div>
                         </td>
                         <td>{customer.email}</td>
                         <td>{customer.paperTicket || '—'}</td>
-                        {/* Новите 2 колони за "външни гости" */}
                         <td>
                           {customer.paperTicket === 'external-guest'
                             ? (customer.guestSchoolName || '—')
@@ -405,13 +452,14 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
                         <td>{customer.ticketCode || 'няма'}</td>
                         <td>{customer.ticket_type || 'няма'}</td>
                         <td>{customer.createdAt}</td>
+                        <td>{getFaschingEntryStatus(customer)}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             ) : (
-              // Оригинална таблица за другите събития
+              // Оригиналната таблица за другите събития
               <table className="table">
                 <thead>
                   <tr>

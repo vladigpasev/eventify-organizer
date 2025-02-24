@@ -2,8 +2,14 @@
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
 import { eq, and, inArray, or, gt } from "drizzle-orm";
-import { eventCustomers, events, sellers, users } from '@/schema/schema';
-import { faschingRequests, faschingTickets } from '@/schema/schema';
+import {
+  eventCustomers,
+  events,
+  sellers,
+  users,
+  faschingRequests,
+  faschingTickets
+} from '@/schema/schema';
 import { cookies } from 'next/headers';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
@@ -18,7 +24,7 @@ interface Customer {
   guestCount: number;
   ticketToken: string;
   isEntered: boolean;
-  paperTicket: string | null;  
+  paperTicket: string | null;
   createdAt: string;
   sellerName: string | null;
   sellerEmail: string | null;
@@ -29,8 +35,11 @@ interface Customer {
   // Новите полета (за Фашинг)
   guestSchoolName?: string | null;
   guestExternalGrade?: string | null;
-  // Показва дали остава < 24 часа за плащане
   expiresSoon?: boolean;
+
+  // ➜ Добавяме за Фашинг:
+  isEnteredFasching?: boolean; 
+  isEnteredAfter?: boolean;
 }
 
 export async function getUsers(eventUuid: string): Promise<Customer[]> {
@@ -89,6 +98,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
      * - Не показваме билети, ако fasching_requests.deleted = true
      * - Неплатените поръчки, които са създадени преди повече от 3 дни, се пропускат (изтекли).
      * - Ако им остава < 24 часа (>= 48 часа минали), да има флаг expiresSoon = true.
+     * - Взимаме и полетата entered_fasching, entered_after.
      */
     const now = new Date();
     const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
@@ -109,6 +119,10 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       requestCreatedAt: faschingRequests.createdAt,
       ticketCode: faschingTickets.ticketCode,
       ticket_type: faschingTickets.ticketType,
+
+      // ➜ добавяме
+      enteredFasching: faschingTickets.entered_fasching,
+      enteredAfter: faschingTickets.entered_after,
     })
     .from(faschingTickets)
     .innerJoin(
@@ -139,7 +153,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       // Ако не е платено и са минали над 48 часа, остава < 24
       const expiresSoon = !row.requestPaid && diffDays > 2;
 
-      // Форматираме датата в dd/mm/yyyy hh:mm:ss (24h)
+      // Форматираме датата (dd/mm/yyyy hh:mm:ss)
       const options: Intl.DateTimeFormatOptions = {
         timeZone: 'Europe/Sofia',
         year: 'numeric',
@@ -161,26 +175,39 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         email: row.guestEmail,
         guestCount: 1,
         ticketToken: row.paymentCode,
+        // При Фашинг в оригиналния код беше set-нато винаги false
+        // Сега ще го оставим false, защото isEntered не ни трябва
+        // (ползваме isEnteredFasching / isEnteredAfter).
         isEntered: false,
+
+        // Поле за "клас" -> слагаме го в paperTicket
         paperTicket: row.guestClass,
         createdAt: formattedCreatedAt,
         sellerName: null,
         sellerEmail: null,
         sellerCurrent: false,
-        reservation: !row.requestPaid,   // ако не е платено -> reservation
+
+        // Показва дали е платен или не
+        // reservation = !paid => ако не е платено => true
+        reservation: !row.requestPaid,
+
         ticketCode: row.ticketCode,
         ticket_type: row.ticket_type,
 
         guestSchoolName: row.guestSchoolName,
         guestExternalGrade: row.guestExternalGrade,
         expiresSoon,
+
+        // ➜ новите пропъртита
+        isEnteredFasching: row.enteredFasching,
+        isEnteredAfter: row.enteredAfter,
       } satisfies Customer;
     });
 
     return formatted;
   }
 
-  // 3) Ако не е фашинг, четем данните от eventCustomers
+  // 3) Ако не е фашинг
   const currentCustomerDb = await db.select({
     uuid: eventCustomers.uuid,
     firstname: eventCustomers.firstname,
@@ -235,8 +262,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
 
   // Форматираме датите
   const formattedCustomers = currentCustomerDb.map(customer => {
-    // @ts-ignore
-    const createdAtDate = new Date(customer.createdAt);
+    const createdAtDate = customer.createdAt ? new Date(customer.createdAt) : new Date();
     const options: Intl.DateTimeFormatOptions = {
       timeZone: 'Europe/Sofia',
       year: 'numeric',
@@ -251,10 +277,10 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       .toLocaleString('en-GB', options)
       .replace(',', '');
 
-    // За non-Fasching не ползваме guestSchoolName/guestExternalGrade, но ги слагаме като null
+    // За non-Fasching не ползваме guestSchoolName/guestExternalGrade
     const sellerData = customer.sellerUuid
-      ? sellerMap[customer.sellerUuid] || { fullName: null, email: null }
-      : { fullName: null, email: null };
+      ? sellerMap[customer.sellerUuid] || { fullName: '', email: '' }
+      : { fullName: '', email: '' };
 
     return {
       uuid: customer.uuid || '',
@@ -266,17 +292,21 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       isEntered: customer.isEntered ?? false,
       paperTicket: customer.paperTicket,
       createdAt: formattedCreatedAt,
-      sellerName: sellerData.fullName,
-      sellerEmail: sellerData.email,
+      sellerName: sellerData.fullName || null,
+      sellerEmail: sellerData.email || null,
       sellerCurrent: customer.sellerUuid === userUuid,
       reservation: customer.reservation ?? false,
 
-      // За съвместимост
+      // Ненужни за non-Fasching
       ticketCode: undefined,
       ticket_type: undefined,
       guestSchoolName: null,
       guestExternalGrade: null,
-      expiresSoon: false, // Може да го оставите false или да направите подобна логика
+      expiresSoon: false,
+
+      // само за fasching
+      isEnteredFasching: undefined,
+      isEnteredAfter: undefined,
     } satisfies Customer;
   });
 

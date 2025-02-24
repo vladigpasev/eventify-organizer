@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { QrScanner } from '@yudiel/react-qr-scanner';
 import { useRouter } from 'next/navigation';
 import { checkAuthenticated } from '@/server/auth';
@@ -16,29 +16,30 @@ const FASCHING_UUID = '956b2e2b-2a48-4f36-a6fa-50d25a2ab94d';
 
 export default function CheckTicket({ eventId }) {
   const router = useRouter();
-
   const [isOpen, setIsOpen] = useState(false);
 
-  // "barcodeMode" vs "QR"
+  // Показване на QR vs Barcode
   const [barcodeMode, setBarcodeMode] = useState(false);
+
+  // За въвеждане на баркод
   const [barcodeValue, setBarcodeValue] = useState('');
 
   // Фашинг => избор fasching/after
   const [faschingMode, setFaschingMode] = useState<'fasching' | 'after'>('fasching');
 
-  // Резултат от checkTicket
+  // Резултат от checkTicket (за да се покаже в QR режим)
   const [scanResult, setScanResult] = useState<any>(null);
 
-  // Съобщения за баркод статуса
+  // За баркод: ако потребителят вече е влязъл, пазим кода му тук (чака второ сканиране за излизане).
+  const [pendingExitTicketCode, setPendingExitTicketCode] = useState<string | null>(null);
+
+  // Съобщения при баркод
   const [barcodeMessage, setBarcodeMessage] = useState('');
   const [barcodeColor, setBarcodeColor] = useState<'text-green-600' | 'text-yellow-600' | 'text-red-600' | ''>('');
 
-  // При потвърждение на излизане (баркод)
-  const [pendingExit, setPendingExit] = useState<any>(null); // пазим user данните, които чакат потвърждение
+  const isFasching = eventId === FASCHING_UUID;
 
-  const isFasching = (eventId === FASCHING_UUID);
-
-  // Отваряне на модала
+  // ----------------------- Модал контрол ----------------------------
   const openModal = async () => {
     const ok = await checkAuthenticated();
     if (!ok) {
@@ -55,7 +56,6 @@ export default function CheckTicket({ eventId }) {
     resetStates();
   };
 
-  // Нулиране на локалното състояние
   const resetStates = () => {
     setBarcodeMode(false);
     setBarcodeValue('');
@@ -63,10 +63,11 @@ export default function CheckTicket({ eventId }) {
     setBarcodeMessage('');
     setBarcodeColor('');
     setFaschingMode('fasching');
-    setPendingExit(null);
+    setPendingExitTicketCode(null);
   };
 
-  // При QR decode
+  // ----------------------- QR ЛОГИКА (НЕ ПРОМЕНЯМЕ) ----------------------------
+  // Тук си ползваме бутоните "Отбележи като влязъл/излязъл" отдолу
   const handleDecode = async (data: string) => {
     if (!data) return;
     try {
@@ -82,21 +83,27 @@ export default function CheckTicket({ eventId }) {
     }
   };
 
-  // При баркод submit
+  // ----------------------- БАРКОД ЛОГИКА ----------------------------
   const handleBarcodeSubmit = useCallback(async () => {
     if (!barcodeValue) return;
 
-    // Ако имаме "pendingExit", проверяваме дали user натиска Enter, за да потвърди излизане
-    if (pendingExit?.success) {
-      // Потвърди излизане
-      await doExit(pendingExit.response.requestedToken);
-      // Ресет
-      setPendingExit(null);
-      setBarcodeValue('');
-      return;
+    // 1) Проверка дали имаме "pending exit" код
+    if (pendingExitTicketCode) {
+      // a) Ако сканираният код съвпада => маркираме като излязъл
+      if (barcodeValue === pendingExitTicketCode) {
+        await doExit(barcodeValue);
+        setBarcodeColor('text-green-600');
+        setBarcodeMessage('Отбелязан като излязъл!');
+        setPendingExitTicketCode(null);
+        setBarcodeValue('');
+        return;
+      } else {
+        // b) Ако е друг код => забравяме чакащия код и продължаваме с новия код
+        setPendingExitTicketCode(null);
+      }
     }
 
-    // Иначе -> checkTicket
+    // 2) "Нормална" проверка на баркода (ако не е влязъл => влиза, ако е влязъл => чака повторно)
     try {
       const resp = await checkTicket({
         qrData: barcodeValue,
@@ -105,20 +112,20 @@ export default function CheckTicket({ eventId }) {
       });
 
       if (!resp.success) {
-        // Невалиден
         setBarcodeColor('text-red-600');
         setBarcodeMessage('Билетът не е валиден за този режим.');
       } else {
         // Валиден
         if (isFasching) {
-          // Проверяваме entered_fasching/entered_after
+          // Фашинг логика
           const r = resp.response;
-          const currentlyEntered = (faschingMode === 'fasching')
-            ? r.entered_fasching
-            : r.entered_after;
-          
+          const currentlyEntered =
+            faschingMode === 'fasching'
+              ? r.entered_fasching
+              : r.entered_after;
+
           if (!currentlyEntered) {
-            // Автоматично "влиза"
+            // Ако не е влязъл => маркираме като влязъл
             await markAsEntered({
               ticketToken: r.requestedToken,
               eventUuid: eventId,
@@ -127,16 +134,19 @@ export default function CheckTicket({ eventId }) {
             setBarcodeColor('text-green-600');
             setBarcodeMessage(`Влязъл: ${r.guestFirstName} ${r.guestLastName} (${r.guestEmail})`);
           } else {
-            // Изискваме потвърждение
+            // Ако е влязъл => очакваме второ сканиране, за да го отбележим излязъл
+            setPendingExitTicketCode(r.requestedToken);
             setBarcodeColor('text-yellow-600');
-            setBarcodeMessage(`Потребителят ${r.guestFirstName} ${r.guestLastName} вече е влязъл. Сканирай билета му отново, за да го отбележиш като излязъл.`);
-            setPendingExit(resp); // Запомняме данните и чакаме второ Enter
+            setBarcodeMessage(
+              `Потребителят ${r.guestFirstName} ${r.guestLastName} вече е влязъл. 
+              Сканирай същия баркод отново, за да го отбележиш като излязъл.`
+            );
           }
         } else {
-          // Стандартно
+          // Стандартно събитие
           const c = resp.response;
           if (!c.isEntered) {
-            // Автоматично влиза
+            // Не е влязъл
             await markAsEntered({
               ticketToken: c.requestedToken,
               eventUuid: eventId,
@@ -144,33 +154,34 @@ export default function CheckTicket({ eventId }) {
             setBarcodeColor('text-green-600');
             setBarcodeMessage(`Влязъл: ${c.firstName} ${c.lastName} (${c.email})`);
           } else {
-            // Изискваме потвърждение
+            // Вече е влязъл => изискваме второ сканиране
+            setPendingExitTicketCode(c.requestedToken);
             setBarcodeColor('text-yellow-600');
-            setBarcodeMessage(`Потребителят ${c.firstName} ${c.lastName} вече е влязъл. Натисни Enter отново, за да го отбележиш като излязъл.`);
-            setPendingExit(resp);
+            setBarcodeMessage(
+              `Потребителят ${c.firstName} ${c.lastName} вече е влязъл. 
+              Сканирай същия баркод отново, за да го отбележиш като излязъл.`
+            );
           }
         }
       }
     } catch (error) {
-      console.error("Barcode error:", error);
+      console.error('Barcode error:', error);
       setBarcodeColor('text-red-600');
       setBarcodeMessage('Възникна грешка!');
     }
     setBarcodeValue('');
-  }, [barcodeValue, isFasching, faschingMode, eventId, pendingExit]);
+  }, [barcodeValue, isFasching, faschingMode, eventId, pendingExitTicketCode]);
 
-  // Ф-я за излизане (при баркод confirm)
+  // Помощна ф-я за излизане
   const doExit = async (token: string) => {
     await markAsExited({
       ticketToken: token,
       eventUuid: eventId,
       mode: isFasching ? faschingMode : undefined
     });
-    setBarcodeColor('text-green-600');
-    setBarcodeMessage('Отбелязан като излязъл!');
   };
 
-  // UI
+  // ----------------------- JSX ----------------------------
   return (
     <>
       <button onClick={openModal} className="btn bg-blue-600 text-white px-4 py-2 rounded">
@@ -182,7 +193,7 @@ export default function CheckTicket({ eventId }) {
           <div className="bg-white p-4 rounded max-w-lg w-full relative">
             <h2 className="text-xl font-bold mb-4">Проверка на билети</h2>
 
-            {/* Фашинг -> select fasching/after */}
+            {/* Ако е Fasching -> показваме селект за fasching/after */}
             {isFasching && (
               <div className="mb-2">
                 <label className="font-semibold mr-2">Режим:</label>
@@ -197,6 +208,7 @@ export default function CheckTicket({ eventId }) {
               </div>
             )}
 
+            {/* Бутони за превключване между QR и Баркод */}
             <div className="flex gap-2 mb-4">
               <button
                 className={`px-3 py-1 rounded border ${!barcodeMode ? 'bg-blue-500 text-white' : ''}`}
@@ -205,7 +217,7 @@ export default function CheckTicket({ eventId }) {
                   setScanResult(null);
                   setBarcodeMessage('');
                   setBarcodeColor('');
-                  setPendingExit(null);
+                  setPendingExitTicketCode(null);
                 }}
               >
                 QR
@@ -217,7 +229,7 @@ export default function CheckTicket({ eventId }) {
                   setScanResult(null);
                   setBarcodeMessage('');
                   setBarcodeColor('');
-                  setPendingExit(null);
+                  setPendingExitTicketCode(null);
                 }}
               >
                 Barcode
@@ -241,7 +253,9 @@ export default function CheckTicket({ eventId }) {
                   }}
                 />
                 {barcodeMessage && (
-                  <p className={`mt-2 font-semibold ${barcodeColor}`}>{barcodeMessage}</p>
+                  <p className={`mt-2 font-semibold ${barcodeColor}`}>
+                    {barcodeMessage}
+                  </p>
                 )}
               </div>
             ) : (
@@ -260,12 +274,13 @@ export default function CheckTicket({ eventId }) {
                     scanResult={scanResult}
                     eventId={eventId}
                     faschingMode={faschingMode}
-                    onClose={() => setScanResult(null)} // "Сканирай друг"
+                    onClose={() => setScanResult(null)}
                   />
                 )}
               </div>
             )}
 
+            {/* Бутон "Затвори" */}
             {!scanResult && (
               <button
                 onClick={closeModal}
@@ -281,16 +296,19 @@ export default function CheckTicket({ eventId }) {
   );
 }
 
-/**
- * Показваме детайли, ако QR е валиден. Операторът може да натисне "влез" или "излез".
- * При фашинг -> гледаме entered_fasching / entered_after
- */
+// Оригиналният компонент за QR резултата (с бутоните "Влез" / "Излез"):
 function QRResult({ scanResult, eventId, faschingMode, onClose }: any) {
+  const FASCHING_UUID = '956b2e2b-2a48-4f36-a6fa-50d25a2ab94d';
+  const isFasching = eventId === FASCHING_UUID;
+
   if (!scanResult.success) {
     return (
       <div className="mt-4 text-center">
         <p className="text-red-600 font-bold">Билетът не е валиден</p>
-        <button onClick={() => onClose()} className="btn bg-red-500 text-white mt-2 px-4 py-2 rounded">
+        <button
+          onClick={() => onClose()}
+          className="btn bg-red-500 text-white mt-2 px-4 py-2 rounded"
+        >
           Сканирай друг
         </button>
       </div>
@@ -298,23 +316,37 @@ function QRResult({ scanResult, eventId, faschingMode, onClose }: any) {
   }
 
   const data = scanResult.response;
-  const isFasching = (eventId === FASCHING_UUID);
-
-  // Проверяваме дали е влязъл
+  // Проверяваме дали е "влязъл"
   let currentlyIn = false;
   if (isFasching) {
-    // mode => fasching/after
-    if (faschingMode === 'fasching') {
-      currentlyIn = data.entered_fasching;
-    } else {
-      currentlyIn = data.entered_after;
-    }
+    // ако е Fasching => гледаме entered_fasching / entered_after
+    currentlyIn =
+      faschingMode === 'fasching'
+        ? data.entered_fasching
+        : data.entered_after;
   } else {
-    // стандартен
+    // Стандартно
     currentlyIn = data.isEntered;
   }
 
-  // Можем да показваме повече инфо
+  const handleEnter = async () => {
+    await markAsEntered({
+      ticketToken: data.requestedToken,
+      eventUuid: eventId,
+      mode: isFasching ? faschingMode : undefined
+    });
+    onClose(); 
+  };
+
+  const handleExit = async () => {
+    await markAsExited({
+      ticketToken: data.requestedToken,
+      eventUuid: eventId,
+      mode: isFasching ? faschingMode : undefined
+    });
+    onClose();
+  };
+
   const userInfo = (
     <div className="text-left mt-4 p-2 border rounded bg-gray-50">
       {isFasching ? (
@@ -328,7 +360,6 @@ function QRResult({ scanResult, eventId, faschingMode, onClose }: any) {
           <p><strong>Име:</strong> {data.firstName} {data.lastName}</p>
           <p><strong>Email:</strong> {data.email}</p>
           <p><strong>Гости:</strong> {data.guestCount}</p>
-          <p><strong>Създаден:</strong> {data.createdAt}</p>
           {data.nineDigitCode && (
             <p className="bg-orange-500 text-white inline-block px-2 py-1 rounded mt-2">
               Хартиен билет #{data.nineDigitCode}
@@ -338,24 +369,6 @@ function QRResult({ scanResult, eventId, faschingMode, onClose }: any) {
       )}
     </div>
   );
-
-  const handleEnter = async () => {
-    await markAsEntered({
-      ticketToken: data.requestedToken,
-      eventUuid: eventId,
-      mode: isFasching ? faschingMode : undefined
-    });
-    onClose(); // изчистваме, за да може да сканираме друг
-  };
-
-  const handleExit = async () => {
-    await markAsExited({
-      ticketToken: data.requestedToken,
-      eventUuid: eventId,
-      mode: isFasching ? faschingMode : undefined
-    });
-    onClose();
-  };
 
   return (
     <div className="mt-4 text-center">
@@ -373,15 +386,24 @@ function QRResult({ scanResult, eventId, faschingMode, onClose }: any) {
 
       <div className="flex gap-2 mt-4 justify-center">
         {currentlyIn ? (
-          <button onClick={handleExit} className="px-4 py-2 rounded bg-yellow-500 text-white">
+          <button
+            onClick={handleExit}
+            className="px-4 py-2 rounded bg-yellow-500 text-white"
+          >
             Отбележи като излязъл
           </button>
         ) : (
-          <button onClick={handleEnter} className="px-4 py-2 rounded bg-green-600 text-white">
+          <button
+            onClick={handleEnter}
+            className="px-4 py-2 rounded bg-green-600 text-white"
+          >
             Отбележи като влязъл
           </button>
         )}
-        <button onClick={() => onClose()} className="px-4 py-2 rounded bg-gray-200">
+        <button
+          onClick={() => onClose()}
+          className="px-4 py-2 rounded bg-gray-200"
+        >
           Сканирай друг
         </button>
       </div>
