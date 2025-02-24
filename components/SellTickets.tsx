@@ -1,12 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { addSeller, getSellers } from '@/server/sellers/actions';
-//@ts-ignore
+
 function SellTickets({ eventUuid, isSeller }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sellers, setSellers] = useState([]);
+
+  // Определяме дали е Fasching
+  const isFasching = (eventUuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d");
 
   useEffect(() => {
     const fetchSellers = async () => {
@@ -20,15 +23,16 @@ function SellTickets({ eventUuid, isSeller }) {
           setError(response.message);
         }
       } catch (error) {
-        setError('An error occurred while fetching the sellers.');
+        setError('Грешка при зареждане на продавачите.');
       }
     };
 
     fetchSellers();
   }, [eventUuid]);
+
   //@ts-ignore
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleSubmit = async (evt) => {
+    evt.preventDefault();
     setLoading(true);
     setError('');
 
@@ -39,7 +43,7 @@ function SellTickets({ eventUuid, isSeller }) {
         setError(response.message);
       } else {
         setEmail('');
-        // Refresh the sellers list after adding a new seller
+        // Презареждаме списъка
         const updatedSellers = await getSellers({ eventUuid });
         if (updatedSellers.success) {
           //@ts-ignore
@@ -47,108 +51,118 @@ function SellTickets({ eventUuid, isSeller }) {
         }
       }
     } catch (error) {
-      setError('An error occurred while adding the seller.');
+      setError('Грешка при добавяне на продавача.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
+    <div className="mt-4">
+      {/* Форма за добавяне на продавач, само ако не е seller */}
       {!isSeller && (
-        <form onSubmit={handleSubmit}>
-          <label htmlFor="email" className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">
-            Въведи имейл
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-                <path
-                  d="M64 112c-8.8 0-16 7.2-16 16v22.1L220.5 291.7c20.7 17 50.4 17 71.1 0L464 150.1V128c0-8.8-7.2-16-16-16H64zM48 212.2V384c0 8.8 7.2 16 16 16H448c8.8 0 16-7.2 16-16V212.2L322 328.8c-38.4 31.5-93.7 31.5-132 0L48 212.2zM0 128C0 92.7 28.7 64 64 64H448c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128z"
-                  fill="currentColor"
-                />
-              </svg>
-            </div>
+        <form onSubmit={handleSubmit} className="mb-4">
+          <div className="flex items-center gap-2">
             <input
-              name="email"
               type="email"
-              id="email"
-              className="block w-full p-4 ps-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Въведи имейл"
+              className="border p-2 rounded flex-1"
+              placeholder="Въведи имейл на продавач"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <input name="eventUuid" type="hidden" id="eventUuid" value={eventUuid} />
             <button
               type="submit"
-              className={`text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 ${loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
               disabled={loading}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
             >
-              {loading ? 'Loading...' : 'Добави'}
+              {loading ? '...' : 'Добави'}
             </button>
           </div>
-          {error && <p className="text-red-500 mt-2">{error}</p>}
+          {error && <p className="text-red-500 mt-1">{error}</p>}
         </form>
       )}
-      <div className="mt-4 overflow-x-auto w-full">
-        {sellers.length > 0 ? (
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Имейл
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Продадени билети
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Продадени билети за томбола
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Дължима сума
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Резервации
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sellers
-                //@ts-ignore
-                .sort((a, b) => b.ticketsSold - a.ticketsSold)
-                .map((seller) => (
-                  //@ts-ignore
-                  <tr key={seller.sellerEmail}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {
-                        //@ts-ignore
-                        seller.sellerEmail} ({seller.firstname ? <>{seller.firstname} {seller.lastname}</> : <>нерегистриран</>})
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
-                      //@ts-ignore
-                      seller.ticketsSold || 0}</td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
-                      //@ts-ignore
-                      seller.tombolaTickets || 0}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {
-                        //@ts-ignore
-                        seller.unregistered ? 'N/A' : seller.priceOwed.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{
-                      //@ts-ignore
-                      seller.reservations || 0}</td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No sellers available.</p>
-        )}
-      </div>
+      {/* Таблица на продавачите */}
+      {sellers.length === 0 ? (
+        <p>Няма продавачи.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          {/* Ако е Fasching => показваме подобрената таблица */}
+          {isFasching ? (
+            <table className="min-w-full text-sm border-collapse">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold">Имейл</th>
+                  <th className="px-4 py-2 text-left font-semibold">Име</th>
+                  <th className="px-4 py-2 text-left font-semibold">Fasching (#)</th>
+                  <th className="px-4 py-2 text-left font-semibold">After (#)</th>
+                  <th className="px-4 py-2 text-left font-semibold">Upgrades</th>
+                  <th className="px-4 py-2 text-left font-semibold">Fasching (лв)</th>
+                  <th className="px-4 py-2 text-left font-semibold">After (лв)</th>
+                  <th className="px-4 py-2 text-left font-semibold">Общо (лв)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sellers
+                  //@ts-ignore
+                  .sort((a, b) => (b.totalRevenue ?? 0) - (a.totalRevenue ?? 0))
+                  .map((seller, idx) => {
+                    return (
+                      <tr key={idx} className="border-b">
+                        <td className="px-4 py-2">{seller.sellerEmail}</td>
+                        <td className="px-4 py-2">
+                          {seller.unregistered
+                            ? 'нерегистриран'
+                            : `${seller.firstname} ${seller.lastname}`}
+                        </td>
+                        <td className="px-4 py-2">{seller.faschingPortionCount || 0}</td>
+                        <td className="px-4 py-2">{seller.afterPortionCount || 0}</td>
+                        <td className="px-4 py-2">{seller.upgradesCount || 0}</td>
+                        <td className="px-4 py-2">{(seller.faschingRevenue ?? 0).toFixed(2)}</td>
+                        <td className="px-4 py-2">{(seller.afterRevenue ?? 0).toFixed(2)}</td>
+                        <td className="px-4 py-2 font-semibold">
+                          {(seller.totalRevenue ?? 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          ) : (
+            // При не-Fasching (стар тип) -> старата таблица
+            <table className="min-w-full text-sm border-collapse">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold">Имейл</th>
+                  <th className="px-4 py-2 text-left font-semibold">Продадени билети</th>
+                  <th className="px-4 py-2 text-left font-semibold">Томбола</th>
+                  <th className="px-4 py-2 text-left font-semibold">Дължимо (лв)</th>
+                  <th className="px-4 py-2 text-left font-semibold">Резервации</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sellers
+                  //@ts-ignore
+                  .sort((a, b) => (b.ticketsSold || 0) - (a.ticketsSold || 0))
+                  .map((seller, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="px-4 py-2">{seller.sellerEmail}{" "}
+                        {seller.firstname ? `(${seller.firstname} ${seller.lastname})` : '(нерегистриран)'}
+                      </td>
+                      <td className="px-4 py-2">{seller.ticketsSold || 0}</td>
+                      <td className="px-4 py-2">{seller.tombolaTickets || 0}</td>
+                      <td className="px-4 py-2">
+                        {seller.unregistered ? 'N/A' : (seller.priceOwed || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2">{seller.reservations || 0}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }
