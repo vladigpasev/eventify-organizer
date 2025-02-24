@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
 import {
+  eventCustomers,
   events,
+  paperTickets,
   sellers,
   users,
   faschingRequests,
-  faschingTickets,
-  eventCustomers,
+  faschingTickets
 } from '@/schema/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { cookies } from 'next/headers';
@@ -20,7 +21,7 @@ import nodemailer from 'nodemailer';
 const db = drizzle(sql);
 
 /**
- * Добавя нов продавач за дадено събитие (не се променя съществено).
+ * Добавя нов продавач (непроменено).
  */
 export async function addSeller(data: any) {
   const sellerSchema = z.object({
@@ -36,9 +37,12 @@ export async function addSeller(data: any) {
     const decodedToken: any = jwt.verify(token, process.env.JWT_SECRET);
     const userUuid = decodedToken.uuid;
 
-    // Проверка дали събитието съществува
+    // Проверка събитие
     const currentEventDb = await db
-      .select({ eventName: events.eventName, userUuid: events.userUuid })
+      .select({
+        eventName: events.eventName,
+        userUuid: events.userUuid,
+      })
       .from(events)
       .where(eq(events.uuid, validatedData.eventUuid))
       .execute();
@@ -48,7 +52,7 @@ export async function addSeller(data: any) {
       return { success: false, message: 'Такова събитие не съществува!' };
     }
 
-    // Данни за текущия (логнат) потребител
+    // Данни за текущия user
     const currentUserDb = await db
       .select({
         firstname: users.firstname,
@@ -64,16 +68,21 @@ export async function addSeller(data: any) {
       return { success: false, message: 'Потребителят не е намерен!' };
     }
 
-    // Само създателят може да добавя продавачи
+    // Само създателя на събитието може да добавя продавачи
     if (currentEvent.userUuid !== userUuid) {
       return { success: false, message: 'Не сте създател на това събитие!' };
     }
 
-    // Проверка да не се добави 2 пъти
+    // Проверка дали вече е добавен
     const existingSellerDb = await db
       .select({ sellerEmail: sellers.sellerEmail })
       .from(sellers)
-      .where(and(eq(sellers.sellerEmail, normalizedEmail), eq(sellers.eventUuid, validatedData.eventUuid)))
+      .where(
+        and(
+          eq(sellers.sellerEmail, normalizedEmail),
+          eq(sellers.eventUuid, validatedData.eventUuid)
+        )
+      )
       .execute();
 
     if (existingSellerDb.length > 0) {
@@ -86,7 +95,7 @@ export async function addSeller(data: any) {
       eventUuid: validatedData.eventUuid,
     }).execute();
 
-    // Изпращаме уведомителен имейл
+    // Изпращаме имейл
     let transporter = nodemailer.createTransport({
       host: process.env.EMAIL_SERVER_HOST,
       port: process.env.EMAIL_SERVER_PORT,
@@ -111,8 +120,8 @@ export async function addSeller(data: any) {
   <h1>Вие сте добавен като продавач на събитие в Eventify.bg</h1>
   <p>Здравейте!</p>
   <p>Този имейл е да ви уведоми, че сте добавен като продавач на събитието <strong>${currentEvent.eventName}</strong>.</p>
-  <p>За да започнете да продавате билети, моля влезте или се регистрирайте на 
-     <a href="https://organize.eventify.bg">https://organize.eventify.bg</a> с този имейл адрес (${normalizedEmail}).</p>
+  <p>За да продавате билети, моля влезте или се регистрирайте на 
+     <a href="https://organize.eventify.bg">organize.eventify.bg</a> с имейл: ${normalizedEmail}.</p>
 </body>
 </html>`,
     });
@@ -126,7 +135,9 @@ export async function addSeller(data: any) {
 
 
 /**
- * Връща списък с продавачи за дадено събитие. Ако е Fasching -> даваме детайлна разбивка (F/A).
+ * Връща списък от продавачи за дадено събитие.
+ * Ако е Fasching: подробна разбивка (Fasching portion, After portion, Upgrades).
+ * Ако не е: старата логика (ticketsSold, reservations, tombolaTickets).
  */
 export async function getSellers(data: any) {
   const eventSellerSchema = z.object({
@@ -134,13 +145,14 @@ export async function getSellers(data: any) {
   });
 
   try {
-    const { eventUuid } = eventSellerSchema.parse(data);
+    const validatedData = eventSellerSchema.parse(data);
+    const eventUuid = validatedData.eventUuid;
 
     const token = cookies().get("token")?.value;
     const decodedToken: any = jwt.verify(token, process.env.JWT_SECRET);
     const userUuid = decodedToken.uuid;
 
-    // Взимаме всички sellerEmail
+    // Взимаме sellerEmail
     const sellersDb = await db
       .select({
         sellerEmail: sellers.sellerEmail,
@@ -153,13 +165,11 @@ export async function getSellers(data: any) {
       return { success: true, sellers: [] };
     }
 
-    // Проверка дали е Fasching
+    // Проверяваме дали е Fasching
     const isFasching = (eventUuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d");
 
     if (!isFasching) {
-      // НЕ-фашинг логика (старият вариант) ------------------------
-      // Тук си връщаме ticketsSold, reservations, tombolaTickets, priceOwed...
-      // (Кодът може да си остане както беше.)
+      // НЕ-Fasching => стара логика
       const eventInfoDb = await db
         .select({
           eventName: events.eventName,
@@ -206,7 +216,7 @@ export async function getSellers(data: any) {
             };
           }
 
-          // Платени (reservation=false)
+          // Платени (reservation = false)
           const paidDb = await db
             .select()
             .from(eventCustomers)
@@ -219,7 +229,7 @@ export async function getSellers(data: any) {
             )
             .execute();
 
-          // Резервации (reservation=true)
+          // Резервации (reservation = true)
           const reservationDb = await db
             .select()
             .from(eventCustomers)
@@ -275,20 +285,12 @@ export async function getSellers(data: any) {
       return { success: true, sellers: results };
     }
 
-    // ФАШИНГ логика (по-новата) --------------------------------------
-    // За всеки продавач връщаме:
-    // 1) faschingPortionCount - колко „Fasching“ порции е продал
-    // 2) afterPortionCount - колко „After“ порции е продал
-    // 3) upgradesCount - колко ъпгрейда е направил
-    // 4) faschingRevenue = 10 * faschingPortionCount
-    // 5) afterRevenue = 15 * afterPortionCount
-    // 6) totalRevenue = faschingRevenue + afterRevenue
-
+    // ФАШИНГ ЛОГИКА
     const results = await Promise.all(
       sellersDb.map(async (sellerObj) => {
         const emailNormalized = sellerObj.sellerEmail.toLowerCase().trim();
 
-        // Търсим съответния user
+        // Търсим user
         const userDb = await db
           .select({
             uuid: users.uuid,
@@ -301,13 +303,12 @@ export async function getSellers(data: any) {
 
         const userInfo = userDb[0];
         if (!userInfo) {
-          // Ако този имейл няма запис в таблицата users => unregistered
+          // unregistered
           return {
             sellerEmail: emailNormalized,
             firstname: null,
             lastname: null,
             unregistered: true,
-
             faschingPortionCount: 0,
             afterPortionCount: 0,
             upgradesCount: 0,
@@ -317,22 +318,23 @@ export async function getSellers(data: any) {
           };
         }
 
-        // (A) Платени заявки (sellerId = userInfo.uuid), за да видим колко fasching/after има
-        const paidRequestsDb = await db
+        // Платени заявки, при които sellerId = userInfo.uuid
+        const requestsDb = await db
           .select()
           .from(faschingRequests)
-          .where(and(
-            eq(faschingRequests.sellerId, userInfo.uuid),
-            eq(faschingRequests.deleted, false),
-            eq(faschingRequests.paid, true)
-          ))
+          .where(
+            and(
+              eq(faschingRequests.sellerId, userInfo.uuid),
+              eq(faschingRequests.deleted, false),
+              eq(faschingRequests.paid, true)
+            )
+          )
           .execute();
 
         let faschingPortionCount = 0;
         let afterPortionCount = 0;
 
-        for (const req of paidRequestsDb) {
-          // Търсим билетите
+        for (const req of requestsDb) {
           const ticketsDb = await db
             .select()
             .from(faschingTickets)
@@ -341,36 +343,36 @@ export async function getSellers(data: any) {
 
           for (const t of ticketsDb) {
             if (t.ticketType === "fasching") {
-              // Чисто fasching => +1 към faschingPortion
               faschingPortionCount++;
             } else if (t.ticketType === "fasching-after") {
-              // Ако няма upgrader => този продавач е продал целия билет
+              // Ако няма upgraderSellerId, значи продавачът е продал целия F+A (25)
               if (!t.upgraderSellerId) {
-                // => +1 faschingPortion, +1 afterPortion
                 faschingPortionCount++;
                 afterPortionCount++;
               } else {
-                // Ако има upgraderSellerId => този продавач получава само „fasching“ (10)
+                // Ако има upgraderSellerId -> този продавач получава само fasching (10)
                 faschingPortionCount++;
               }
             }
           }
         }
 
-        // (B) Ъпгрейди: където upgraderSellerId = userInfo.uuid
+        // Ъпгрейди, където upgraderSellerId = този user
         const upgradedTicketsDb = await db
           .select()
           .from(faschingTickets)
-          .where(and(
-            eq(faschingTickets.upgraderSellerId, userInfo.uuid),
-            eq(faschingTickets.ticketType, "fasching-after")
-          ))
+          .where(
+            and(
+              eq(faschingTickets.upgraderSellerId, userInfo.uuid),
+              eq(faschingTickets.ticketType, "fasching-after")
+            )
+          )
           .execute();
 
         let upgradesCount = 0;
         for (const t of upgradedTicketsDb) {
           upgradesCount++;
-          // => той получава 15
+          // ъпгрейдърът получава 15 (After portion)
           afterPortionCount++;
         }
 
@@ -383,7 +385,6 @@ export async function getSellers(data: any) {
           firstname: userInfo.firstname,
           lastname: userInfo.lastname,
           unregistered: false,
-
           faschingPortionCount,
           afterPortionCount,
           upgradesCount,
@@ -396,7 +397,7 @@ export async function getSellers(data: any) {
 
     return { success: true, sellers: results };
   } catch (error) {
-    console.error(error);
-    return { success: false, message: "Грешка при извличане на продавачите!" };
+    console.log(error);
+    return { success: false, message: 'Грешка при извличане на продавачите!' };
   }
 }
