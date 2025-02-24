@@ -1,7 +1,7 @@
 "use server";
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eq, and, inArray, gt } from "drizzle-orm";
+import { eq, and, inArray, or, gt } from "drizzle-orm";
 import { eventCustomers, events, sellers, users } from '@/schema/schema';
 import { faschingRequests, faschingTickets } from '@/schema/schema';
 import { cookies } from 'next/headers';
@@ -18,15 +18,19 @@ interface Customer {
   guestCount: number;
   ticketToken: string;
   isEntered: boolean;
-  paperTicket: string | null;  // Тук ще сложим guestClassGroup
+  paperTicket: string | null;  
   createdAt: string;
   sellerName: string | null;
   sellerEmail: string | null;
   sellerCurrent: boolean;
   reservation: boolean;
-  ticketCode?: string;      // Ако искате да добавите ticketCode
+  ticketCode?: string;
   ticket_type?: string;
-  // Ако искате да групирате, може да добавите и requestId: number; например
+  // Новите полета (за Фашинг)
+  guestSchoolName?: string | null;
+  guestExternalGrade?: string | null;
+  // Показва дали остава < 24 часа за плащане
+  expiresSoon?: boolean;
 }
 
 export async function getUsers(eventUuid: string): Promise<Customer[]> {
@@ -83,12 +87,12 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
   if (eventUuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d") {
     /**
      * - Не показваме билети, ако fasching_requests.deleted = true
-     * - Ако fasching_requests.paid = false -> reservation = true
-     * - firstname, lastname -> guest_first_name, guest_last_name
-     * - paperTicket -> guest_class_group
-     * - ticketToken -> paymentCode
-     * - createdAt -> fasching_requests.created_at
+     * - Неплатените поръчки, които са създадени преди повече от 3 дни, се пропускат (изтекли).
+     * - Ако им остава < 24 часа (>= 48 часа минали), да има флаг expiresSoon = true.
      */
+    const now = new Date();
+    const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+
     const faschingTicketsDb = await db.select({
       ticketId: faschingTickets.id,
       requestId: faschingTickets.requestId,
@@ -96,6 +100,9 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       guestLastName: faschingTickets.guestLastName,
       guestEmail: faschingTickets.guestEmail,
       guestClass: faschingTickets.guestClassGroup,
+      guestSchoolName: faschingTickets.guestSchoolName,
+      guestExternalGrade: faschingTickets.guestExternalGrade,
+
       requestPaid: faschingRequests.paid,
       requestDeleted: faschingRequests.deleted,
       paymentCode: faschingRequests.paymentCode,
@@ -108,14 +115,31 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       faschingRequests,
       eq(faschingTickets.requestId, faschingRequests.id)
     )
-    .where(eq(faschingRequests.deleted, false))  // само "deleted = false"
-    .orderBy(faschingTickets.requestId)         // групиране по requestId, ако искате може втори критерий
+    .where(
+      and(
+        eq(faschingRequests.deleted, false),
+        // Ако е платено -> винаги го показваме
+        // Ако не е платено -> показваме го само ако createdAt > три дни назад
+        or(
+          eq(faschingRequests.paid, true),
+          gt(faschingRequests.createdAt, threeDaysAgo)
+        )
+      )
+    )
+    .orderBy(faschingTickets.requestId)
     .execute();
 
     // Преобразуваме към нашия интерфейс Customer
     const formatted = faschingTicketsDb.map(row => {
-      // Форматираме датата (ако искате форматиране "dd.mm.yyyy, HH:MM:SS")
       const rawDate = row.requestCreatedAt ? new Date(row.requestCreatedAt) : new Date();
+      // Изчисляваме колко дни са минали
+      const diffMs = now.getTime() - rawDate.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+      // Ако не е платено и са минали над 48 часа, остава < 24
+      const expiresSoon = !row.requestPaid && diffDays > 2;
+
+      // Форматираме датата в dd/mm/yyyy hh:mm:ss (24h)
       const options: Intl.DateTimeFormatOptions = {
         timeZone: 'Europe/Sofia',
         year: 'numeric',
@@ -143,17 +167,20 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         sellerName: null,
         sellerEmail: null,
         sellerCurrent: false,
-        reservation: !row.requestPaid,
-        ticketCode: row.ticketCode,      // добавете това
-        ticket_type: row.ticket_type,    // и това
+        reservation: !row.requestPaid,   // ако не е платено -> reservation
+        ticketCode: row.ticketCode,
+        ticket_type: row.ticket_type,
+
+        guestSchoolName: row.guestSchoolName,
+        guestExternalGrade: row.guestExternalGrade,
+        expiresSoon,
       } satisfies Customer;
-      
     });
 
     return formatted;
   }
 
-  // 3) Ако не е фашинг, четем данните както досега от eventCustomers
+  // 3) Ако не е фашинг, четем данните от eventCustomers
   const currentCustomerDb = await db.select({
     uuid: eventCustomers.uuid,
     firstname: eventCustomers.firstname,
@@ -204,6 +231,8 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
     }, {} as Record<string, { fullName: string; email: string }>);
   }
 
+  const now = new Date();
+
   // Форматираме датите
   const formattedCustomers = currentCustomerDb.map(customer => {
     // @ts-ignore
@@ -222,6 +251,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       .toLocaleString('en-GB', options)
       .replace(',', '');
 
+    // За non-Fasching не ползваме guestSchoolName/guestExternalGrade, но ги слагаме като null
     const sellerData = customer.sellerUuid
       ? sellerMap[customer.sellerUuid] || { fullName: null, email: null }
       : { fullName: null, email: null };
@@ -240,6 +270,13 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       sellerEmail: sellerData.email,
       sellerCurrent: customer.sellerUuid === userUuid,
       reservation: customer.reservation ?? false,
+
+      // За съвместимост
+      ticketCode: undefined,
+      ticket_type: undefined,
+      guestSchoolName: null,
+      guestExternalGrade: null,
+      expiresSoon: false, // Може да го оставите false или да направите подобна логика
     } satisfies Customer;
   });
 

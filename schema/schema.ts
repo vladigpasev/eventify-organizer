@@ -148,7 +148,8 @@ export const faschingTickets = pgTable("fasching_tickets", {
 
   // 10-цифрен код
   ticketCode: varchar("ticket_code", { length: 10 }),
-
+  guestSchoolName: varchar("guest_school_name", { length: 255 }),   // nullable
+  guestExternalGrade: varchar("guest_external_grade", { length: 50 }), // nullable
   // ➜ Новите полета:
   entered_fasching: boolean("entered_fasching").notNull().default(false),
   entered_after: boolean("entered_after").notNull().default(false),
