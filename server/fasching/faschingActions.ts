@@ -1,38 +1,47 @@
 "use server";
 
-import { sql } from '@vercel/postgres';
-import { drizzle } from 'drizzle-orm/vercel-postgres';
-import { eq } from 'drizzle-orm';
-import { faschingRequests, faschingTickets } from '@/schema/schema';
-import { sendFaschingTicketEmail } from '@/server/mailer';
+import { randomBytes } from "crypto"; // Вмъкваме crypto за сигурни произволни стойности
+import { sql } from "@vercel/postgres";
+import { drizzle } from "drizzle-orm/vercel-postgres";
+import { eq } from "drizzle-orm";
 
+import { faschingRequests, faschingTickets } from "@/schema/schema";
+import { sendFaschingTicketEmail } from "@/server/mailer";
+
+// Инициализираме drizzle с нашата връзка
 const db = drizzle(sql);
 
+// Цени на различните видове билети
 const TICKET_PRICES = {
   fasching: 10,
   fasching_after: 25,
 };
 
 function normalizeTicketType(type: string) {
-  if (type === 'fasching-after') return 'fasching_after';
+  if (type === "fasching-after") return "fasching_after";
   return type;
 }
 
+/**
+ * Проверява поръчка по неин paymentCode
+ */
 export async function verifyFaschingCode({ paymentCode }: { paymentCode: string }) {
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(faschingRequests)
       .where(eq(faschingRequests.paymentCode, paymentCode))
       .execute();
 
     if (!request) {
-      return { success: false, message: 'Няма такава поръчка' };
+      return { success: false, message: "Няма такава поръчка" };
     }
     if (request.deleted) {
-      return { success: false, message: 'Поръчката е изтрита' };
+      return { success: false, message: "Поръчката е изтрита" };
     }
 
-    const tickets = await db.select()
+    const tickets = await db
+      .select()
       .from(faschingTickets)
       .where(eq(faschingTickets.requestId, request.id))
       .execute();
@@ -41,12 +50,12 @@ export async function verifyFaschingCode({ paymentCode }: { paymentCode: string 
     let faschingAfterCount = 0;
     let totalDue = 0;
 
-    tickets.forEach(ticket => {
+    tickets.forEach((ticket) => {
       const norm = normalizeTicketType(ticket.ticketType);
-      if (norm === 'fasching') {
+      if (norm === "fasching") {
         faschingCount++;
         totalDue += TICKET_PRICES.fasching;
-      } else if (norm === 'fasching_after') {
+      } else if (norm === "fasching_after") {
         faschingAfterCount++;
         totalDue += TICKET_PRICES.fasching_after;
       }
@@ -61,48 +70,54 @@ export async function verifyFaschingCode({ paymentCode }: { paymentCode: string 
       totalDue,
     };
   } catch (error) {
-    console.error('verifyFaschingCode error:', error);
-    return { success: false, message: 'Грешка при проверка на поръчката' };
+    console.error("verifyFaschingCode error:", error);
+    return { success: false, message: "Грешка при проверка на поръчката" };
   }
 }
 
+/**
+ * Потвърждава плащане за дадена поръчка, генерира кодове (ако няма),
+ * изпраща email-и с билети и изчислява ресто.
+ */
 export async function confirmFaschingPayment({
   requestId,
   paidAmount,
-  sellerId
+  sellerId,
 }: {
-  requestId: number,
-  paidAmount: number,
-  sellerId: string
+  requestId: number;
+  paidAmount: number;
+  sellerId: string;
 }) {
   try {
-    const [request] = await db.select()
+    const [request] = await db
+      .select()
       .from(faschingRequests)
       .where(eq(faschingRequests.id, requestId))
       .execute();
 
     if (!request) {
-      return { success: false, message: 'Няма такава поръчка' };
+      return { success: false, message: "Няма такава поръчка" };
     }
     if (request.deleted) {
-      return { success: false, message: 'Поръчката е изтрита' };
+      return { success: false, message: "Поръчката е изтрита" };
     }
     if (request.paid) {
-      return { success: false, message: 'Тази поръчка вече е платена' };
+      return { success: false, message: "Тази поръчка вече е платена" };
     }
 
-    const tickets = await db.select()
+    const tickets = await db
+      .select()
       .from(faschingTickets)
       .where(eq(faschingTickets.requestId, requestId))
       .execute();
 
-    // Calculate totalDue
+    // Пресмятаме колко е дължимото
     let totalDue = 0;
     for (const t of tickets) {
       const norm = normalizeTicketType(t.ticketType);
-      if (norm === 'fasching') {
+      if (norm === "fasching") {
         totalDue += TICKET_PRICES.fasching;
-      } else if (norm === 'fasching_after') {
+      } else if (norm === "fasching_after") {
         totalDue += TICKET_PRICES.fasching_after;
       }
     }
@@ -114,8 +129,9 @@ export async function confirmFaschingPayment({
       };
     }
 
-    // Mark paid & seller
-    await db.update(faschingRequests)
+    // Маркираме поръчката като платена + запазваме данни за продавача
+    await db
+      .update(faschingRequests)
       .set({
         paid: true,
         sellerId: sellerId,
@@ -123,18 +139,20 @@ export async function confirmFaschingPayment({
       .where(eq(faschingRequests.id, requestId))
       .execute();
 
+    // Генерираме код за всеки билет (ако няма) и изпращаме email
     for (const ticket of tickets) {
       let code = ticket.ticketCode;
       if (!code) {
         code = generate10DigitCode();
-        // Update in DB
-        await db.update(faschingTickets)
+        // Ъпдейтваме кода в базата
+        await db
+          .update(faschingTickets)
           .set({ ticketCode: code })
           .where(eq(faschingTickets.id, ticket.id))
           .execute();
       }
 
-      // Send email
+      // Изпращаме имейл с линк към билета
       const ticketUrl = generateTicketUrl(code);
       await sendFaschingTicketEmail({
         guestEmail: ticket.guestEmail,
@@ -152,24 +170,30 @@ export async function confirmFaschingPayment({
       totalDue,
       paidAmount,
       change,
-      message: `Плащането е потвърдено. Ресто: ${change} лв.`
+      message: `Плащането е потвърдено. Ресто: ${change} лв.`,
     };
   } catch (error) {
-    console.error('confirmFaschingPayment error:', error);
-    return { success: false, message: 'Грешка при потвърждаване на плащането' };
+    console.error("confirmFaschingPayment error:", error);
+    return { success: false, message: "Грешка при потвърждаване на плащането" };
   }
 }
 
+/**
+ * Генерира 10-цифрен код по криптографски сигурен начин.
+ * Използваме randomBytes(6) (~48 бита ентропия), превръщаме го в число,
+ * ограничаваме до 10 цифри и падваме с нули отпред при нужда.
+ */
 function generate10DigitCode(): string {
-  let r = Math.random().toString().slice(2, 12);
-  if (r.length < 10) {
-    r = r.padStart(10, '0');
-  }
-  return r;
+  const buffer = randomBytes(6); // 48 бита - достатъчно за >10^10 комбинации
+  const randomNum = parseInt(buffer.toString("hex"), 16) % 1_000_000_0000;
+  return randomNum.toString().padStart(10, "0");
 }
 
+/**
+ * Генерира URL за билет, в който JWT криптографски съдържа ticketCode.
+ */
 function generateTicketUrl(ticketCode: string): string {
-  const jwt = require('jsonwebtoken');
+  const jwt = require("jsonwebtoken");
   const payload = { ticketCode };
   const token = jwt.sign(payload, process.env.JWT_SECRET);
   return `https://tickets.eventify.bg/${token}`;
