@@ -153,6 +153,8 @@ export const faschingTickets = pgTable("fasching_tickets", {
   // ➜ Новите полета:
   entered_fasching: boolean("entered_fasching").notNull().default(false),
   entered_after: boolean("entered_after").notNull().default(false),
+  upgraderSellerId: varchar("upgrader_seller_id", { length: 100 }), // nullable
+
 });
 
 

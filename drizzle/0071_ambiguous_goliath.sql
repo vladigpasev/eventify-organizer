@@ -1,0 +1,1 @@
+ALTER TABLE "fasching_tickets" ADD COLUMN "upgrader_seller_id" varchar(100);

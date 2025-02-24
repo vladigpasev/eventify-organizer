@@ -1,29 +1,33 @@
 "use server";
 
-import { randomBytes } from "crypto"; // Вмъкваме crypto за сигурни произволни стойности
+import { randomBytes } from "crypto";
 import { sql } from "@vercel/postgres";
 import { drizzle } from "drizzle-orm/vercel-postgres";
 import { eq } from "drizzle-orm";
 
 import { faschingRequests, faschingTickets } from "@/schema/schema";
-import { sendFaschingTicketEmail } from "@/server/mailer";
+import { sendFaschingTicketEmail, sendFaschingAfterUpgradeEmail } from "@/server/mailer";
 
-// Инициализираме drizzle с нашата връзка
 const db = drizzle(sql);
 
-// Цени на различните видове билети
-const TICKET_PRICES = {
-  fasching: 10,
-  fasching_after: 25,
+// Цени на билетите (string ключове)
+const TICKET_PRICES: Record<string, number> = {
+  "fasching": 10,
+  "fasching-after": 25,
 };
 
+/**
+ * normalizeTicketType:
+ * - Ако получим "fasching-after" -> така го оставяме
+ * - Ако е "fasching_after" (с долна черта) -> ще го превърнем в "fasching-after"
+ */
 function normalizeTicketType(type: string) {
-  if (type === "fasching-after") return "fasching_after";
+  if (type === "fasching_after") return "fasching-after";
   return type;
 }
 
 /**
- * Проверява поръчка по неин paymentCode
+ * Пример: проверява съществуване на поръчка по неин paymentCode
  */
 export async function verifyFaschingCode({ paymentCode }: { paymentCode: string }) {
   try {
@@ -54,10 +58,10 @@ export async function verifyFaschingCode({ paymentCode }: { paymentCode: string 
       const norm = normalizeTicketType(ticket.ticketType);
       if (norm === "fasching") {
         faschingCount++;
-        totalDue += TICKET_PRICES.fasching;
-      } else if (norm === "fasching_after") {
+        totalDue += TICKET_PRICES["fasching"];
+      } else if (norm === "fasching-after") {
         faschingAfterCount++;
-        totalDue += TICKET_PRICES.fasching_after;
+        totalDue += TICKET_PRICES["fasching-after"];
       }
     });
 
@@ -76,8 +80,8 @@ export async function verifyFaschingCode({ paymentCode }: { paymentCode: string 
 }
 
 /**
- * Потвърждава плащане за дадена поръчка, генерира кодове (ако няма),
- * изпраща email-и с билети и изчислява ресто.
+ * Потвърждава плащане на цялата поръчка (първоначално).
+ * Генерира кодове за билетите, изпраща имейли, изчислява ресто и т.н.
  */
 export async function confirmFaschingPayment({
   requestId,
@@ -105,21 +109,18 @@ export async function confirmFaschingPayment({
       return { success: false, message: "Тази поръчка вече е платена" };
     }
 
+    // Намираме билетите
     const tickets = await db
       .select()
       .from(faschingTickets)
       .where(eq(faschingTickets.requestId, requestId))
       .execute();
 
-    // Пресмятаме колко е дължимото
     let totalDue = 0;
     for (const t of tickets) {
       const norm = normalizeTicketType(t.ticketType);
-      if (norm === "fasching") {
-        totalDue += TICKET_PRICES.fasching;
-      } else if (norm === "fasching_after") {
-        totalDue += TICKET_PRICES.fasching_after;
-      }
+      // "fasching" -> 10, "fasching-after" -> 25
+      totalDue += TICKET_PRICES[norm] || 0;
     }
 
     if (paidAmount < totalDue) {
@@ -129,7 +130,7 @@ export async function confirmFaschingPayment({
       };
     }
 
-    // Маркираме поръчката като платена + запазваме данни за продавача
+    // Маркираме поръчката като платена
     await db
       .update(faschingRequests)
       .set({
@@ -139,12 +140,11 @@ export async function confirmFaschingPayment({
       .where(eq(faschingRequests.id, requestId))
       .execute();
 
-    // Генерираме код за всеки билет (ако няма) и изпращаме email
+    // Генерираме code за всеки билет (ако няма) и изпращаме имейл
     for (const ticket of tickets) {
       let code = ticket.ticketCode;
       if (!code) {
         code = generate10DigitCode();
-        // Ъпдейтваме кода в базата
         await db
           .update(faschingTickets)
           .set({ ticketCode: code })
@@ -152,7 +152,6 @@ export async function confirmFaschingPayment({
           .execute();
       }
 
-      // Изпращаме имейл с линк към билета
       const ticketUrl = generateTicketUrl(code);
       await sendFaschingTicketEmail({
         guestEmail: ticket.guestEmail,
@@ -179,22 +178,130 @@ export async function confirmFaschingPayment({
 }
 
 /**
- * Генерира 10-цифрен код по криптографски сигурен начин.
- * Използваме randomBytes(6) (~48 бита ентропия), превръщаме го в число,
- * ограничаваме до 10 цифри и падваме с нули отпред при нужда.
+ * Потвърждава upgrade (доплащане) от "fasching" на "fasching-after".
+ * - ticketType: "fasching" -> "fasching-after"
+ * - Записва се кой е upgraderSellerId
+ * - Доплащане: 15 лв (25 - 10)
+ * - Връща колко е ресто (ако е платено над 15)
+ * - Изпраща имейл
  */
+export async function confirmAddAfterUpgrade({
+  ticketId,
+  paidAmount,
+  sellerId,
+}: {
+  ticketId: number;
+  paidAmount: number;
+  sellerId: string;
+}) {
+  try {
+    // 1) Взимаме билета
+    const [ticket] = await db
+      .select()
+      .from(faschingTickets)
+      .where(eq(faschingTickets.id, ticketId))
+      .execute();
+
+    if (!ticket) {
+      return { success: false, message: "Няма такъв билет." };
+    }
+    if (ticket.ticketType === "fasching-after") {
+      return { success: false, message: "Този билет вече е 'fasching-after'." };
+    }
+    if (ticket.ticketType !== "fasching") {
+      return { success: false, message: "Този билет не е 'fasching'." };
+    }
+
+    // 2) Търсим поръчката
+    const [request] = await db
+      .select()
+      .from(faschingRequests)
+      .where(eq(faschingRequests.id, ticket.requestId))
+      .execute();
+
+    if (!request) {
+      return { success: false, message: "Няма такава поръчка." };
+    }
+    if (request.deleted) {
+      return { success: false, message: "Поръчката е изтрита." };
+    }
+
+    // ➜ Новата проверка: ако поръчката не е платена => не можем да добавим After
+    if (!request.paid) {
+      return { success: false, message: "Не може да добавите 'After' на неплатен билет." };
+    }
+
+    // ... после логиката за доплащане:
+    const upgradeCost = 15;
+    if (paidAmount < upgradeCost) {
+      return {
+        success: false,
+        message: `Недостатъчна сума. Необходими са 15 лв, получено: ${paidAmount} лв.`,
+      };
+    }
+
+    // Ъпдейтваме на "fasching-after" + записваме upgraderSellerId
+    await db
+      .update(faschingTickets)
+      .set({
+        ticketType: "fasching-after",
+        upgraderSellerId: sellerId,
+      })
+      .where(eq(faschingTickets.id, ticketId))
+      .execute();
+
+    const change = paidAmount - upgradeCost;
+
+    // Изпращаме имейл за upgrade
+    await sendFaschingAfterUpgradeEmail({
+      guestEmail: ticket.guestEmail,
+      guestFirstName: ticket.guestFirstName,
+      guestLastName: ticket.guestLastName,
+      ticketCode: ticket.ticketCode || undefined,
+      ticketUrl: generateTicketUrl(ticket.ticketCode || ""),
+    });
+
+    return {
+      success: true,
+      message: "Успешно добавен After!",
+      change,
+    };
+  } catch (error) {
+    console.error("confirmAddAfterUpgrade error:", error);
+    return { success: false, message: "Грешка при ъпгрейд до 'fasching-after'." };
+  }
+}
+
+
+// -------------------------------------
+// Helper функции
+// -------------------------------------
 function generate10DigitCode(): string {
-  const buffer = randomBytes(6); // 48 бита - достатъчно за >10^10 комбинации
+  const buffer = randomBytes(6); 
   const randomNum = parseInt(buffer.toString("hex"), 16) % 1_000_000_0000;
   return randomNum.toString().padStart(10, "0");
 }
 
-/**
- * Генерира URL за билет, в който JWT криптографски съдържа ticketCode.
- */
 function generateTicketUrl(ticketCode: string): string {
   const jwt = require("jsonwebtoken");
   const payload = { ticketCode };
   const token = jwt.sign(payload, process.env.JWT_SECRET);
   return `https://tickets.eventify.bg/${token}`;
 }
+
+/**
+ * (По желание) Старият addAfterToTicket, ако още ви трябва.
+ * Само сменя ticketType, без да смята пари.
+ */
+// export async function addAfterToTicket({ ticketId }: { ticketId: number }) {
+//   try {
+//     const [ticket] = await db
+//       .select()
+//       .from(faschingTickets)
+//       .where(eq(faschingTickets.id, ticketId))
+//       .execute();
+//     ...
+//   } catch (error) {
+//     ...
+//   }
+// }

@@ -1,4 +1,4 @@
-'use server';
+"use server";
 import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { drizzle } from 'drizzle-orm/vercel-postgres';
@@ -10,7 +10,7 @@ import {
   users,
   faschingRequests,
   faschingTickets
-} from '../../schema/schema';
+} from '@/schema/schema';
 import { eq, and, gt } from 'drizzle-orm';
 //@ts-ignore
 import jwt from 'jsonwebtoken';
@@ -21,12 +21,10 @@ import { cookies } from 'next/headers';
 const db = drizzle(sql);
 
 /**
- * Добавя нов продавач в таблицата `sellers`. 
- * - За всяко събитие (без значение дали фашинг или не), продавачите се пазят по имейл.
- * - Изпраща се и нотификационен имейл.
+ * Добавя нов продавач за дадено събитие.
+ * (Няма промени, освен ако искате да добавите нещо специално.)
  */
 export async function addSeller(data: any) {
-  // Дефинираме схема за валидация на данните
   const sellerSchema = z.object({
     email: z.string().nonempty(),
     eventUuid: z.string().nonempty(),
@@ -34,14 +32,13 @@ export async function addSeller(data: any) {
 
   try {
     const validatedData = sellerSchema.parse(data);
-    // Нормализираме имейла (примерно до lower-case и без излишни интервали)
     const normalizedEmail = validatedData.email.trim().toLowerCase();
 
     const token = cookies().get("token")?.value;
     const decodedToken: any = jwt.verify(token, process.env.JWT_SECRET);
     const userUuid = decodedToken.uuid;
 
-    // Извличаме данни за текущото събитие
+    // Проверка дали събитието съществува
     const currentEventDb = await db
       .select({
         eventName: events.eventName,
@@ -50,8 +47,8 @@ export async function addSeller(data: any) {
       .from(events)
       .where(eq(events.uuid, validatedData.eventUuid))
       .execute();
-    const currentEvent = currentEventDb[0];
 
+    const currentEvent = currentEventDb[0];
     if (!currentEvent) {
       return { success: false, message: 'Такова събитие не съществува!' };
     }
@@ -66,23 +63,23 @@ export async function addSeller(data: any) {
       .from(users)
       .where(eq(users.uuid, userUuid))
       .execute();
-    const currentUser = currentUserDb[0];
 
+    const currentUser = currentUserDb[0];
     if (!currentUser) {
       return { success: false, message: 'Потребителят не е намерен!' };
     }
 
-    // Проверка: не можем да добавим себе си като продавач
+    // Не можем да добавим себе си като продавач
     if (normalizedEmail === currentUser.email.trim().toLowerCase()) {
       return { success: false, message: 'Не можете да добавите себе си като продавач!' };
     }
 
-    // Проверка: дали текущият потребител е създател на събитието
+    // Само създателят на събитието може да добавя продавачи
     if (currentEvent.userUuid !== userUuid) {
       return { success: false, message: 'Не сте създател на това събитие!' };
     }
 
-    // Проверка: дали продавачът вече е добавен
+    // Проверка дали вече е добавен
     const existingSellerDb = await db
       .select({ sellerEmail: sellers.sellerEmail })
       .from(sellers)
@@ -98,7 +95,7 @@ export async function addSeller(data: any) {
       return { success: false, message: 'Този продавач вече е добавен за това събитие!' };
     }
 
-    // Вмъкваме новия продавач в таблицата `sellers`
+    // Вмъкваме
     await db.insert(sellers).values({
       sellerEmail: normalizedEmail,
       eventUuid: validatedData.eventUuid,
@@ -106,7 +103,6 @@ export async function addSeller(data: any) {
 
     // Изпращаме уведомителен имейл
     let transporter = nodemailer.createTransport({
-      //@ts-ignore
       host: process.env.EMAIL_SERVER_HOST,
       port: process.env.EMAIL_SERVER_PORT,
       secure: false,
@@ -148,10 +144,10 @@ export async function addSeller(data: any) {
   }
 }
 
+
 /**
- * Извлича всички продавачи за дадено събитие + брой/сума продадени билети.
- * - Ако е фашинг, използва `faschingRequests` и `faschingTickets`.
- * - Иначе използва `eventCustomers`.
+ * Връща списък от продавачи за дадено събитие + колко билети/сума имат.
+ * Ако е фашинг, разделяме приходите при ъпгрейд на билет (fasching -> fasching-after).
  */
 export async function getSellers(data: any) {
   const eventSellerSchema = z.object({
@@ -166,7 +162,7 @@ export async function getSellers(data: any) {
 
     const { eventUuid } = validatedData;
 
-    // Извличаме продавачите (имейлите) за това събитие
+    // Взимаме sellerEmail от таблицата sellers
     const sellersDb = await db
       .select({
         sellerEmail: sellers.sellerEmail,
@@ -180,18 +176,18 @@ export async function getSellers(data: any) {
     }
 
     // Проверяваме дали е фашинг
-    const isFasching = eventUuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
+    const isFasching = (eventUuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d");
 
-    // Ако е фашинг, логиката е да намерим съответния user (по имейл),
-    // след което по user.uuid -> да извлечем всички faschingRequests, където sellerId = user.uuid,
-    // и да сумираме всички билети от faschingTickets.
     if (isFasching) {
-      // За всеки продавач намираме userUuid по имейл
-      const sellersResult = await Promise.all(
-        sellersDb.map(async (sellerObj) => {
-          const normalizedEmail = sellerObj.sellerEmail.trim().toLowerCase();
+      // За всеки имейл -> намираме user => (uuid, firstname, lastname)
+      // после търсим заявки (faschingRequests) където sellerId = user.uuid
+      // ... но трябва и да отчетем upgraderSellerId (15 лв) при fasching-after.
 
-          // Търсим user по този имейл
+      const results = await Promise.all(
+        sellersDb.map(async (sellerObj) => {
+          const emailNormalized = sellerObj.sellerEmail.toLowerCase().trim();
+
+          // Намираме user
           const userDb = await db
             .select({
               uuid: users.uuid,
@@ -199,17 +195,17 @@ export async function getSellers(data: any) {
               lastname: users.lastname,
             })
             .from(users)
-            .where(eq(users.email, normalizedEmail))
+            .where(eq(users.email, emailNormalized))
             .execute();
-          const userInfo = userDb[0];
 
-          // Ако няма такъв потребител, маркираме го като unregistered
+          const userInfo = userDb[0];
           if (!userInfo) {
+            // unregistered
             return {
-              sellerEmail: sellerObj.sellerEmail,
-              unregistered: true,
+              sellerEmail: emailNormalized,
               firstname: null,
               lastname: null,
+              unregistered: true,
               ticketsSold: 0,
               priceOwed: 0,
               reservations: 0,
@@ -217,17 +213,24 @@ export async function getSellers(data: any) {
             };
           }
 
-          // Има потребител => намираме всички заявки, където sellerId = userInfo.uuid
+          // 1) Всички платени заявки, където sellerId = userInfo.uuid
+          //    => това са поръчките, които той е продал като "основен" продавач
           const requestsDb = await db
             .select()
             .from(faschingRequests)
-            .where(eq(faschingRequests.sellerId, userInfo.uuid))
+            .where(
+              and(
+                eq(faschingRequests.sellerId, userInfo.uuid),
+                eq(faschingRequests.deleted, false),
+                eq(faschingRequests.paid, true)
+              )
+            )
             .execute();
 
-          let totalTicketsSold = 0;
-          let totalRevenue = 0;
+          let sumTickets = 0;
+          let sumRevenue = 0;
 
-          // За всяка заявка взимаме всички билети от faschingTickets
+          // При всяка заявка търсим билетите
           for (const req of requestsDb) {
             const ticketsDb = await db
               .select()
@@ -236,33 +239,71 @@ export async function getSellers(data: any) {
               .execute();
 
             for (const t of ticketsDb) {
-              totalTicketsSold += 1;
               if (t.ticketType === "fasching") {
-                totalRevenue += 10;
+                // Напълно "fasching" => 10 лв
+                sumTickets++;
+                sumRevenue += 10;
               } else if (t.ticketType === "fasching-after") {
-                totalRevenue += 25;
+                sumTickets++;
+                if (t.upgraderSellerId) {
+                  // Ако има upgraderSellerId => оригиналният продавач получава само 10
+                  sumRevenue += 10;
+                } else {
+                  // Ако няма upgrader => значи отначало е бил купен като "fasching-after" => 25
+                  sumRevenue += 25;
+                }
               }
             }
           }
 
+          // 2) Сега намираме всички билети, където upgraderSellerId = user.uuid (той е ъпгрейднал)
+          //    => +15 лв за всеки такъв
+          const upgradedTicketsDb = await db
+            .select()
+            .from(faschingTickets)
+            .where(
+              and(
+                eq(faschingTickets.upgraderSellerId, userInfo.uuid),
+                eq(faschingTickets.ticketType, "fasching-after")
+              )
+            )
+            .execute();
+
+          let upgradeCount = 0;
+          for (const t of upgradedTicketsDb) {
+            upgradeCount++;
+            // ъпгрейдърът взима 15
+            sumRevenue += 15;
+          }
+
+          // Сборът ticketsSold = общия брой (sumTickets) + още (ако искате) upgradeCount 
+          // Но реално "собственикът" на upgrade е само ъпгрейда => 
+          // Ако предпочитате да ги броите отделно, можете. 
+          // Тук казваме, че ticketsSold ще брои само "цели" билети, 
+          // a upgradeCount са "partial" ъпгрейди. 
+          // Ако искате, можете да решите как да го показвате.
+          const finalTicketsSold = sumTickets; // + upgradeCount => по желание
+
           return {
-            sellerEmail: sellerObj.sellerEmail,
+            sellerEmail: emailNormalized,
             firstname: userInfo.firstname,
             lastname: userInfo.lastname,
-            ticketsSold: totalTicketsSold,
-            priceOwed: totalRevenue,
-            reservations: 0,       // При фашинг не броим reservations
-            tombolaTickets: 0,     // При фашинг не броим tombolaTickets
             unregistered: false,
+            ticketsSold: finalTicketsSold,
+            priceOwed: sumRevenue,
+            reservations: 0,   // При фашинг не броим rez
+            tombolaTickets: 0, // Няма tombola
           };
         })
       );
 
-      return { success: true, sellers: sellersResult };
+      return { success: true, sellers: results };
     }
 
-    // Ако не е фашинг, продължаваме със стандартната логика
-    // 1) Взимаме информация от events за цените (price, tombolaPrice)
+    // ************ НЕ-ФАШИНГ ЛОГИКА ************
+    // (Оставяме както е било. Само припомняме, че тук се взима eventCustomers.)
+
+    // 1) Взимаме event info
     const eventInfoDb = await db
       .select({
         eventName: events.eventName,
@@ -273,21 +314,18 @@ export async function getSellers(data: any) {
       .from(events)
       .where(eq(events.uuid, eventUuid))
       .execute();
-    const eventInfo = eventInfoDb[0];
 
+    const eventInfo = eventInfoDb[0];
     if (!eventInfo) {
-      return { success: false, message: 'Event not found' };
+      return { success: false, message: "Event not found" };
     }
 
-    const eventPrice = eventInfo.price ? parseFloat(eventInfo.price) : 0;
+    const basePrice = eventInfo.price ? parseFloat(eventInfo.price) : 0;
     const tombolaPrice = eventInfo.tombolaPrice ? parseFloat(eventInfo.tombolaPrice) : 0;
 
-    // 2) За всеки продавач намираме user по имейл и после събираме билети от eventCustomers
-    const sellersResult = await Promise.all(
+    const results = await Promise.all(
       sellersDb.map(async (sellerObj) => {
-        const normalizedEmail = sellerObj.sellerEmail.trim().toLowerCase();
-
-        // Намираме user
+        const emailNormalized = sellerObj.sellerEmail.toLowerCase().trim();
         const userDb = await db
           .select({
             uuid: users.uuid,
@@ -295,17 +333,16 @@ export async function getSellers(data: any) {
             lastname: users.lastname,
           })
           .from(users)
-          .where(eq(users.email, normalizedEmail))
+          .where(eq(users.email, emailNormalized))
           .execute();
-        const userInfo = userDb[0];
 
-        // Ако такъв потребител няма, връщаме unregistered
+        const userInfo = userDb[0];
         if (!userInfo) {
           return {
             sellerEmail: sellerObj.sellerEmail,
-            unregistered: true,
             firstname: null,
             lastname: null,
+            unregistered: true,
             ticketsSold: 0,
             priceOwed: 0,
             reservations: 0,
@@ -313,8 +350,8 @@ export async function getSellers(data: any) {
           };
         }
 
-        // Ако има потребител, броим продадените билети (reservation=false)
-        const ticketsSoldDb = await db
+        // броим платените (reservation=false)
+        const paidDb = await db
           .select()
           .from(eventCustomers)
           .where(
@@ -326,8 +363,8 @@ export async function getSellers(data: any) {
           )
           .execute();
 
-        // Броим резервациите (reservation=true)
-        const reservationsDb = await db
+        // броим резервации (reservation=true)
+        const reservationDb = await db
           .select()
           .from(eventCustomers)
           .where(
@@ -339,8 +376,11 @@ export async function getSellers(data: any) {
           )
           .execute();
 
-        // Търсим tombolaTickets (tombola_weight > 0) с tombola_seller_uuid = user.uuid
-        const tombolaTicketsDb = await db
+        const ticketsSold = paidDb.length; // просто брой
+        const reservations = reservationDb.length;
+
+        // Tombola tickets
+        const tombolaDb = await db
           .select({
             tombola_weight: eventCustomers.tombola_weight,
           })
@@ -354,29 +394,29 @@ export async function getSellers(data: any) {
           )
           .execute();
 
-        const ticketsSold = ticketsSoldDb.length;
-        const reservations = reservationsDb.length;
-        const tombolaWeightSum = tombolaTicketsDb.reduce((acc, row) => {
-          const w = row.tombola_weight ? parseFloat(row.tombola_weight) : 0;
-          return acc + w;
-        }, 0);
+        let tombolaSum = 0;
+        for (const row of tombolaDb) {
+          if (row.tombola_weight) {
+            tombolaSum += parseFloat(row.tombola_weight.toString());
+          }
+        }
 
-        const priceOwed = ticketsSold * eventPrice + tombolaWeightSum * tombolaPrice;
+        const priceOwed = ticketsSold * basePrice + tombolaSum * tombolaPrice;
 
         return {
-          sellerEmail: sellerObj.sellerEmail,
+          sellerEmail: emailNormalized,
           firstname: userInfo.firstname,
           lastname: userInfo.lastname,
+          unregistered: false,
           ticketsSold,
           priceOwed,
           reservations,
-          tombolaTickets: tombolaWeightSum,
-          unregistered: false,
+          tombolaTickets: tombolaSum,
         };
       })
     );
 
-    return { success: true, sellers: sellersResult };
+    return { success: true, sellers: results };
   } catch (error) {
     console.log(error);
     return { success: false, message: 'Грешка при извличане на продавачите!' };

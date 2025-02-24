@@ -1,14 +1,18 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+
 import TicketActionsBtn from '@/components/ManageEvent/TicketActionsBtn';
 import TicketDeactivateBtn from '@/components/ManageEvent/TicketDeactivateBtn';
 import { getUsers } from '@/server/events/getUsers';
+
 import AddCustomer from './AddCustomer';
 import CheckTicket from './CheckTickets';
 import SendEmailToAll from './SendEmailToAll';
+
 import { getCurrentLimit, changeLimit } from '@/server/events/limit';
 import { getCurrentTombolaPrice, changeTombolaPrice } from '@/server/events/tombola_price';
+import { confirmAddAfterUpgrade } from '@/server/fasching/faschingActions';
 
 export const maxDuration = 300;
 
@@ -19,7 +23,7 @@ interface UserTableProps {
 }
 
 interface Customer {
-  uuid: string;
+  uuid: string; // при фашинг => ticketId (string)
   firstname: string;
   lastname: string;
   email: string;
@@ -31,15 +35,15 @@ interface Customer {
   sellerName: string | null;
   sellerEmail: string | null;
   sellerCurrent: boolean;
-  reservation: boolean;       // => при Фашинг означава "неплатено"
+  reservation: boolean; // при фашинг => неплатен
+
+  // Полета специфични за фашинг
   ticketCode?: string;
   ticket_type?: string;
   guestSchoolName?: string | null;
   guestExternalGrade?: string | null;
   expiresSoon?: boolean;
-
-  // Полета за Фашинг
-  isEnteredFasching?: boolean; 
+  isEnteredFasching?: boolean;
   isEnteredAfter?: boolean;
 }
 
@@ -49,25 +53,31 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+
+  // Лимит и томбола (за не-фашинг)
   const [limit, setLimit] = useState<string | null>(null);
   const [limitLoading, setLimitLoading] = useState<boolean>(false);
   const [isLimitChanged, setIsLimitChanged] = useState<boolean>(false);
+
   const [tombolaPrice, setTombolaPrice] = useState<string | null>(null);
   const [isTombolaPriceChanged, setIsTombolaPriceChanged] = useState<boolean>(false);
 
-  // Проверка дали събитието е "фашинг"
-  const isFasching = eventId === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
+  // Определяме дали е фашинг
+  const isFasching = (eventId === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d");
 
-  // Базовите статистики (ако не е фашинг)
+  // 8-класове
+  const eighthGradeSet = new Set(["8а", "8б", "8в", "8г", "8д", "8е", "8ж"]);
+
+  // НЕ-фашинг статистики
   const enteredCount = users.filter(user => user.isEntered).length;
   const reservationCount = users.filter(user => user.reservation).length;
   const ticketCount = users.length;
 
-  // Допълнителни статистики за фашинг
-  let faschingPaidCount = 0;             // общо платени
-  let faschingEnteredFasching = 0;       // entered_fasching
-  let faschingEnteredAfter = 0;          // entered_after
-  let faschingEnteredBoth = 0;           // влязъл и в двете
+  // ФАШИНГ статистики
+  let faschingPaidCount = 0;
+  let faschingEnteredFasching = 0;
+  let faschingEnteredAfter = 0;
+  let faschingEnteredBoth = 0;
   if (isFasching) {
     faschingPaidCount = users.filter(u => !u.reservation).length;
     faschingEnteredFasching = users.filter(u => u.isEnteredFasching).length;
@@ -75,6 +85,76 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     faschingEnteredBoth = users.filter(u => u.isEnteredFasching && u.isEnteredAfter).length;
   }
 
+  // -------------------------------
+  // МОДАЛ за „Добави афтър“
+  // -------------------------------
+  const [isAddAfterModalOpen, setAddAfterModalOpen] = useState(false);
+  const [currentTicket, setCurrentTicket] = useState<Customer | null>(null);
+  const [paidAmount, setPaidAmount] = useState<string>('');
+  const [change, setChange] = useState<number>(0);
+  const [addAfterError, setAddAfterError] = useState<string>('');
+  const [addAfterSuccessMsg, setAddAfterSuccessMsg] = useState<string>('');
+  // Разлика: 25 (fasching-after) - 10 (fasching) = 15
+  const upgradeCost = 15;
+
+  // >>> NEW: loading state for the "Потвърди" button
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  function openAddAfterModal(ticket: Customer) {
+    setCurrentTicket(ticket);
+    setPaidAmount('');
+    setChange(0);
+    setAddAfterError('');
+    setAddAfterSuccessMsg('');
+    setAddAfterModalOpen(true);
+  }
+
+  function closeAddAfterModal() {
+    setAddAfterModalOpen(false);
+    setCurrentTicket(null);
+  }
+
+  async function handleConfirmAddAfter() {
+    if (!currentTicket) return;
+    const ticketId = parseInt(currentTicket.uuid, 10);
+    if (isNaN(ticketId)) {
+      setAddAfterError("Невалиден ticketId");
+      return;
+    }
+    const paidNum = parseFloat(paidAmount);
+    if (isNaN(paidNum) || paidNum <= 0) {
+      setAddAfterError("Моля въведете валидна сума.");
+      return;
+    }
+    try {
+      // Start loading
+      setIsUpgrading(true);
+
+      const result = await confirmAddAfterUpgrade({
+        ticketId,
+        paidAmount: paidNum,
+        sellerId: userUuid,
+      });
+      if (!result.success) {
+        setAddAfterError(result.message || "Грешка при ъпгрейд.");
+      } else {
+        setChange(result.change ?? 0);
+        setAddAfterSuccessMsg("Билетът е обновен до Fasching + After!");
+        // Презареждаме списъка
+        fetchUsers();
+      }
+    } catch (err) {
+      console.error(err);
+      setAddAfterError("Неуспешен ъпгрейд.");
+    } finally {
+      // Stop loading
+      setIsUpgrading(false);
+    }
+  }
+
+  // -------------------------------
+  // Зареждане на данни
+  // -------------------------------
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
@@ -91,8 +171,8 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 
   const fetchLimit = async () => {
     try {
-      const currentLimit = await getCurrentLimit({ eventUuid: eventId });
-      setLimit(currentLimit.limit || '');
+      const data = await getCurrentLimit({ eventUuid: eventId });
+      setLimit(data.limit || '');
     } catch (err) {
       console.error('Error fetching limit:', err);
     }
@@ -100,13 +180,16 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
 
   const fetchTombolaPrice = async () => {
     try {
-      const currentTombolaPrice = await getCurrentTombolaPrice({ eventUuid: eventId });
-      setTombolaPrice(currentTombolaPrice.tombolaPrice || '');
+      const data = await getCurrentTombolaPrice({ eventUuid: eventId });
+      setTombolaPrice(data.tombolaPrice || '');
     } catch (err) {
       console.error('Error fetching tombola price:', err);
     }
   };
 
+  // -------------------------------
+  // Логика за лимит/томбола
+  // -------------------------------
   const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLimit(e.target.value);
     setIsLimitChanged(true);
@@ -115,22 +198,10 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
   const handleLimitSubmit = async () => {
     setLimitLoading(true);
     try {
-      await changeLimit({ limit: limit, eventUuid: eventId });
+      await changeLimit({ limit, eventUuid: eventId });
       setIsLimitChanged(false);
     } catch (err) {
       console.error('Error changing limit:', err);
-    } finally {
-      setLimitLoading(false);
-    }
-  };
-
-  const handleTombolaPriceSubmit = async () => {
-    setLimitLoading(true);
-    try {
-      await changeTombolaPrice({ tombolaPrice: tombolaPrice, eventUuid: eventId });
-      setIsTombolaPriceChanged(false);
-    } catch (err) {
-      console.error('Error changing tombola price:', err);
     } finally {
       setLimitLoading(false);
     }
@@ -141,25 +212,34 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     setIsTombolaPriceChanged(true);
   };
 
-  // Подредба на фашинг класовете
+  const handleTombolaPriceSubmit = async () => {
+    setLimitLoading(true);
+    try {
+      await changeTombolaPrice({ tombolaPrice, eventUuid: eventId });
+      setIsTombolaPriceChanged(false);
+    } catch (err) {
+      console.error('Error changing tombola price:', err);
+    } finally {
+      setLimitLoading(false);
+    }
+  };
+
+  // -------------------------------
+  // ФАШИНГ: сортиране/цветове
+  // -------------------------------
   function getFaschingClassPriority(customer: Customer): number {
     const classesOrder = [
-      "8а","8б","8в","8г","8д","8е","8ж",
-      "9а","9б","9в","9г","9д","9е","9ж",
-      "10а","10б","10в","10г","10д","10е","10ж",
-      "11а","11б","11в","11г","11д","11е","11ж",
-      "12а","12б","12в","12г","12д","12е","12ж"
+      "8а", "8б", "8в", "8г", "8д", "8е", "8ж",
+      "9а", "9б", "9в", "9г", "9д", "9е", "9ж",
+      "10а", "10б", "10в", "10г", "10д", "10е", "10ж",
+      "11а", "11б", "11в", "11г", "11д", "11е", "11ж",
+      "12а", "12б", "12в", "12г", "12д", "12е", "12ж"
     ];
 
     const cGroup = customer.paperTicket || "";
-
-    // Ако е в списъка -> index
     const foundIndex = classesOrder.indexOf(cGroup);
-    if (foundIndex >= 0) {
-      return foundIndex;
-    }
+    if (foundIndex >= 0) return foundIndex;
 
-    // external-guest
     if (cGroup === "external-guest") {
       const gradeNum = Number(customer.guestExternalGrade);
       if (!isNaN(gradeNum) && gradeNum >= 8 && gradeNum <= 12) {
@@ -167,57 +247,36 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
       }
       return 105; // adult
     }
-
-    // adult
-    if (cGroup === "adult") {
-      return 200;
-    }
-    // teacher
-    if (cGroup === "teacher") {
-      return 300;
-    }
-    // default
+    if (cGroup === "adult") return 200;
+    if (cGroup === "teacher") return 300;
     return 999;
   }
 
-  // Определя цвета на реда (само при фашинг)
   function getFaschingRowColor(customer: Customer): string {
-    // 1) Ако е неплатен (reservation = true) -> червен фон
     if (customer.reservation) {
-      return 'bg-red-100';
+      return 'bg-red-100'; // неплатен
     }
-    // 2) Платен
     const f = customer.isEnteredFasching;
     const a = customer.isEnteredAfter;
-    if (f && a) {
-      return 'bg-purple-100';
-    } else if (f) {
-      return 'bg-green-100';
-    } else if (a) {
-      return 'bg-blue-100';
-    }
-    // Платен, но не е влязъл
+    if (f && a) return 'bg-purple-100';
+    if (f) return 'bg-green-100';
+    if (a) return 'bg-blue-100';
     return '';
   }
 
-  // Колона "Статус" за Фашинг
   function getFaschingEntryStatus(customer: Customer): string {
+    if (customer.reservation) return 'Неплатен';
     const f = customer.isEnteredFasching;
     const a = customer.isEnteredAfter;
-    if (customer.reservation) {
-      return 'Неплатен';
-    }
-    if (f && a) {
-      return 'Влязъл и във Fasching, и в After';
-    } else if (f) {
-      return 'Влязъл във Fasching';
-    } else if (a) {
-      return 'Влязъл в After';
-    } else {
-      return 'Платен, но не е влязъл';
-    }
+    if (f && a) return 'Влязъл и във Fasching, и в After';
+    if (f) return 'Влязъл във Fasching';
+    if (a) return 'Влязъл в After';
+    return 'Платен, но не е влязъл';
   }
 
+  // -------------------------------
+  // useEffect -> зареждане
+  // -------------------------------
   useEffect(() => {
     fetchUsers();
     if (!isFasching) {
@@ -226,86 +285,80 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
     }
   }, [eventId, isFasching]);
 
+  // Филтриране + сортиране
   useEffect(() => {
-    // 1) Филтриране
-    const lowerSearch = searchTerm.toLowerCase();
-    const filtered = users.filter(user => {
-      const fullName = `${user.firstname} ${user.lastname}`.toLowerCase();
-      const sellerFullName = user.sellerName
-        ? `${user.sellerName} (${user.sellerEmail})`.toLowerCase()
-        : '';
-      const ticketCode = user.ticketCode || '';
-      const ticketType = user.ticket_type || '';
-      const combinedSearch = `${fullName} ${user.email} ${user.paperTicket || ''} ${sellerFullName} ${ticketCode} ${ticketType}`;
-      return combinedSearch.includes(lowerSearch);
+    const lower = searchTerm.toLowerCase();
+    const tmp = users.filter(u => {
+      const fullName = `${u.firstname} ${u.lastname}`.toLowerCase();
+      const sellerFull = u.sellerName ? `${u.sellerName} (${u.sellerEmail})`.toLowerCase() : "";
+      const combined = `${fullName} ${u.email} ${u.paperTicket || ''} ${sellerFull} ${u.ticketCode || ''} ${u.ticket_type || ''} ${u.ticketToken}`;
+      return combined.includes(lower);
     });
 
-    // 2) Сортиране
     let sorted: Customer[];
     if (isFasching) {
-      sorted = [...filtered].sort((a, b) => {
-        // 1) клас
-        const groupA = getFaschingClassPriority(a);
-        const groupB = getFaschingClassPriority(b);
-        if (groupA !== groupB) return groupA - groupB;
-
-        // 2) име
-        const nameA = (a.firstname + " " + a.lastname).toLowerCase();
-        const nameB = (b.firstname + " " + b.lastname).toLowerCase();
+      sorted = [...tmp].sort((a, b) => {
+        const ga = getFaschingClassPriority(a);
+        const gb = getFaschingClassPriority(b);
+        if (ga !== gb) return ga - gb;
+        const nameA = (a.firstname + a.lastname).toLowerCase();
+        const nameB = (b.firstname + b.lastname).toLowerCase();
         return nameA.localeCompare(nameB);
       });
     } else {
-      sorted = [...filtered].sort((a, b) => {
-        const nameA = (a.firstname + " " + a.lastname).toLowerCase();
-        const nameB = (b.firstname + " " + b.lastname).toLowerCase();
+      sorted = [...tmp].sort((a, b) => {
+        const nameA = (a.firstname + a.lastname).toLowerCase();
+        const nameB = (b.firstname + b.lastname).toLowerCase();
         return nameA.localeCompare(nameB);
       });
     }
     setFilteredUsers(sorted);
   }, [searchTerm, users, isFasching]);
 
-  if (error) return <p>Error loading users: {error.message}</p>;
+  if (error) {
+    return <p className="text-red-500">Error loading users: {error.message}</p>;
+  }
 
   return (
     <div className="bg-white shadow rounded p-4 text-black">
-      <div className='flex justify-between items-center'>
+      <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold mb-3">Билети</h2>
-        <div className='flex gap-2 sm:flex-row flex-col'>
-          {/* Ако е фашинг, бутонът "Създай билет" -> "Събери пари" */}
-          <AddCustomer 
-            eventId={eventId} 
-            onCustomerAdded={fetchUsers} 
-            userUuid={userUuid} 
-            buttonLabel={isFasching ? "Събери пари" : "Създай билет"} 
+        <div className="flex gap-2 sm:flex-row flex-col">
+          <AddCustomer
+            eventId={eventId}
+            onCustomerAdded={fetchUsers}
+            userUuid={userUuid}
+            buttonLabel={isFasching ? "Събери пари" : "Създай билет"}
           />
           <CheckTicket eventId={eventId} onEnteredOrExited={fetchUsers} />
           {!isFasching && (
-            <a href={`/dashboard/events/${eventId}/tombola`} className='btn'>Томбола</a>
+            <a href={`/dashboard/events/${eventId}/tombola`} className="btn">
+              Томбола
+            </a>
           )}
         </div>
       </div>
-      
+
       {!isFasching && (
         isSeller ? (
           <div>
-            <div className='pb-5'>
+            <div className="pb-5">
               <strong>Лимит на билетите: {limit || 'няма'}</strong>
             </div>
-            <div className='pb-5'>
+            <div className="pb-5">
               <strong>Цена на билет от томболата: {tombolaPrice || 'няма'}</strong>
             </div>
           </div>
         ) : (
           <div>
             <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleLimitSubmit(); }}>
-              <label htmlFor="limit-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              <label htmlFor="limit-input" className="block mb-2 text-sm font-medium">
                 Лимит на билетите (оставете празно, ако няма):
               </label>
               <input
                 type="number"
                 id="limit-input"
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                           focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                className="input input-bordered w-full"
                 placeholder="Няма лимит"
                 min={0}
                 value={limit || ''}
@@ -321,14 +374,13 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
             </form>
 
             <form className="max-w-sm mb-2" onSubmit={(e) => { e.preventDefault(); handleTombolaPriceSubmit(); }}>
-              <label htmlFor="tombola-price-input" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+              <label htmlFor="tombola-price-input" className="block mb-2 text-sm font-medium">
                 Цена на томболата (оставете празно, ако няма):
               </label>
               <input
                 type="number"
                 id="tombola-price-input"
-                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                           focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                className="input input-bordered w-full"
                 placeholder="Няма томбола"
                 min={0}
                 value={tombolaPrice || ''}
@@ -339,7 +391,7 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
                 className="btn btn-primary mt-2"
                 disabled={!isTombolaPriceChanged || limitLoading}
               >
-                {limitLoading ? 'Зареждане...' : 'Промени цената на томболата'}
+                {limitLoading ? 'Зареждане...' : 'Промени цената'}
               </button>
             </form>
           </div>
@@ -347,17 +399,15 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
       )}
 
       {isLoading ? (
-        <>Зареждане...</>
+        <p>Зареждане...</p>
       ) : (
         <>
-          {/* При не-фашинг -> бутона "Изпрати имейл" */}
-          {!isSeller && !isFasching && (
-            <div>
-              <SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} />
-            </div>
+          {/* Бутон "Изпрати имейл до всички" (само при не-фашинг и не-seller) */}
+          {!isFasching && !isSeller && (
+            <SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} />
           )}
 
-          {/* Статистика само за фашинг */}
+          {/* Статистика: Фашинг */}
           {isFasching && (
             <div className="mb-4 flex flex-wrap gap-2">
               <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded">
@@ -378,35 +428,37 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
             </div>
           )}
 
-          {/* Статистика при не-фашинг */}
+          {/* Статистика: НЕ-фашинг */}
           {!isFasching && (
-            <div className="mb-4">
-              <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
+            <div className="mb-4 flex flex-wrap gap-2">
+              <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded">
                 {ticketCount - reservationCount} Билети
               </span>
-              <span className="bg-blue-100 text-blue-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
+              <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-2.5 py-0.5 rounded">
                 {reservationCount} Резервации
               </span>
-              <span className="bg-green-100 text-green-800 text-sm font-semibold mr-2 px-2.5 py-0.5 rounded">
+              <span className="bg-green-100 text-green-800 text-sm font-semibold px-2.5 py-0.5 rounded">
                 {enteredCount} влeзли
               </span>
             </div>
           )}
 
+          {/* Търсене */}
           <div className="mb-4">
             <input
               type="text"
               placeholder="Търси"
-              className="input border border-gray-200 w-full mb-4"
+              className="input border border-gray-200 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
 
+          {/* Таблица */}
           <div className="overflow-x-auto">
             {isFasching ? (
-              // Таблицата за фашинг
-              <table className="table">
+              // ********** Таблица за ФАШИНГ **********
+              <table className="table w-full">
                 <thead>
                   <tr>
                     <th>Име</th>
@@ -416,112 +468,129 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
                     <th>Външен клас</th>
                     <th>Плащане код</th>
                     <th>Код на билета</th>
-                    <th>Тип на билета</th>
-                    <th>Дата и час на издаване</th>
+                    <th>Тип</th>
+                    <th>Дата/час</th>
                     <th>Статус</th>
+                    <th>Действия</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((customer, index) => {
-                    // Взимаме цвета
-                    const rowColor = getFaschingRowColor(customer);
+                  {filteredUsers.map((cust, idx) => {
+                    const rowColor = getFaschingRowColor(cust);
+
+                    const isFaschingTicket = (cust.ticket_type === "fasching");
+                    const isEighthGrader = eighthGradeSet.has(cust.paperTicket || "");
+                    const isUnpaid = cust.reservation === true;
+
+                    const disableAddAfter = isUnpaid || isEighthGrader || !isFaschingTicket;
+
                     return (
-                      <tr key={index} className={rowColor}>
-                        <td>
-                          <div className="flex items-center">
-                            <div className="font-bold">
-                              {customer.firstname} {customer.lastname}
-                            </div>
-                          </div>
+                      <tr key={idx} className={rowColor}>
+                        <td className="font-bold">
+                          {cust.firstname} {cust.lastname}
                         </td>
-                        <td>{customer.email}</td>
-                        <td>{customer.paperTicket || '—'}</td>
+                        <td>{cust.email}</td>
+                        <td>{cust.paperTicket || '—'}</td>
                         <td>
-                          {customer.paperTicket === 'external-guest'
-                            ? (customer.guestSchoolName || '—')
+                          {cust.paperTicket === 'external-guest'
+                            ? (cust.guestSchoolName || '—')
                             : '—'
                           }
                         </td>
                         <td>
-                          {customer.paperTicket === 'external-guest'
-                            ? (customer.guestExternalGrade || '—')
+                          {cust.paperTicket === 'external-guest'
+                            ? (cust.guestExternalGrade || '—')
                             : '—'
                           }
                         </td>
-                        <td>{customer.ticketToken}</td>
-                        <td>{customer.ticketCode || 'няма'}</td>
-                        <td>{customer.ticket_type || 'няма'}</td>
-                        <td>{customer.createdAt}</td>
-                        <td>{getFaschingEntryStatus(customer)}</td>
+                        <td>{cust.ticketToken}</td>
+                        <td>{cust.ticketCode || '—'}</td>
+                        <td>{cust.ticket_type || '—'}</td>
+                        <td>{cust.createdAt}</td>
+                        <td>{getFaschingEntryStatus(cust)}</td>
+                        <td>
+                          {/* "Добави афтър" => модал */}
+                          {isFaschingTicket && (
+                            <button
+                              className="btn btn-sm btn-primary"
+                              disabled={disableAddAfter}
+                              onClick={() => openAddAfterModal(cust)}
+                            >
+                              Добави афтър
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             ) : (
-              // Оригиналната таблица за другите събития
-              <table className="table">
+              // ********** Таблица за НЕ-фашинг **********
+              <table className="table w-full">
                 <thead>
                   <tr>
                     <th></th>
                     <th>Име</th>
                     <th>Имейл</th>
-                    <th>Брой гости</th>
+                    <th>Гости</th>
                     <th>Хартиен билет</th>
                     <th>Продавач</th>
-                    <th>Дата и час на издаване</th>
+                    <th>Дата/час</th>
                     <th></th>
                     <th></th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredUsers.map((customer, index) => (
-                    <tr key={index} className={customer.reservation ? 'bg-blue-100' : ''}>
-                      <th></th>
-                      <td>
-                        <div className="flex items-center">
-                          <div>
-                            <div className={`font-bold ${customer.isEntered ? 'text-yellow-500' : ''}`}>
-                              {customer.firstname} {customer.lastname}
-                            </div>
-                          </div>
-                        </div>
+                  {filteredUsers.map((cust, idx) => (
+                    <tr key={idx} className={cust.reservation ? 'bg-blue-100' : ''}>
+                      <td></td>
+                      <td className={cust.isEntered ? 'font-bold text-yellow-600' : 'font-bold'}>
+                        {cust.firstname} {cust.lastname}
                       </td>
-                      <td>{customer.email}</td>
-                      <td>{customer.guestCount}</td>
-                      <td>{customer.paperTicket || 'няма'}</td>
+                      <td>{cust.email}</td>
+                      <td>{cust.guestCount}</td>
+                      <td>{cust.paperTicket || 'няма'}</td>
+                      <td>{cust.sellerName} ({cust.sellerEmail})</td>
+                      <td>{cust.createdAt}</td>
                       <td>
-                        {customer.sellerName} ({customer.sellerEmail})
-                      </td>
-                      <td>{customer.createdAt}</td>
-                      <th>
                         <Link
+                          href={`https://tickets.eventify.bg/${cust.ticketToken}`}
+                          target="_blank"
                           className="btn btn-ghost btn-xs text-black"
-                          href={`https://tickets.eventify.bg/` + customer.ticketToken}
-                          target='_blank'
                         >
-                          <svg height="24" viewBox="0 0 1792 1792" width="24" xmlns="http://www.w3.org/2000/svg">
+                          <svg
+                            height="24"
+                            viewBox="0 0 1792 1792"
+                            width="24"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
                             <path
-                              d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 56 136-56l126 125q37 37 37 90.5t-37 90.5z"
+                              d="M1024 452l316 316-572 572-316-316zm-211 979l618-618q19-19 19-45t-19-45l-362-362q-18-18-45-18t-45 
+                              18l-618 618q-19 19-19 45t19 45l362 362q18 18 45 18t45-18zm889-637l-907 908q-37 37-90.5 
+                              37t-90.5-37l-126-126q56-56 56-136t-56-136-136-56-136 
+                              56l-125-126q-37-37-37-90.5t37-90.5l907-906q37-37 
+                              90.5-37t90.5 37l125 125q-56 56-56 136t56 136 136 
+                              56 136-56l126 125q37 37 37 90.5t-37 90.5z"
                               fill="currentColor"
                             />
                           </svg>
                         </Link>
-                      </th>
-                      <th>
+                      </td>
+                      <td>
                         <TicketActionsBtn
-                          ticketToken={customer.ticketToken}
+                          ticketToken={cust.ticketToken}
                           eventId={eventId}
                           onEnteredOrExited={fetchUsers}
                         />
-                      </th>
-                      <th>
+                      </td>
+                      <td>
                         <TicketDeactivateBtn
-                          customerUuid={customer.uuid}
-                          disabled={!customer.sellerCurrent && isSeller}
+                          customerUuid={cust.uuid}
+                          disabled={!cust.sellerCurrent && isSeller}
                         />
-                      </th>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -529,6 +598,86 @@ const UserTable = ({ eventId, isSeller, userUuid }: UserTableProps) => {
             )}
           </div>
         </>
+      )}
+
+      {/* Модал за "Добави афтър" */}
+      {isAddAfterModalOpen && currentTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative">
+            <button
+              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
+              onClick={closeAddAfterModal}
+            >
+              <svg viewBox="0 0 384 512" width="16" fill="currentColor">
+                <path d="M310.6 361.4c12.5 12.5 
+                12.5 32.8 0 
+                45.3s-32.8 12.5-45.3 
+                0L192 333.3l-73.4 73.4c-12.5 
+                12.5-32.8 12.5-45.3 
+                0s-12.5-32.8 
+                0-45.3l73.4-73.4-73.4-73.4c-12.5-12.5-12.5-32.8
+                0-45.3s32.8-12.5 45.3 0l73.4 
+                73.4 73.4-73.4c12.5-12.5 
+                32.8-12.5 45.3 0s12.5 32.8 0 
+                45.3L237.3 288l73.3 73.4z"/>
+              </svg>
+            </button>
+
+            <h2 className="text-xl font-bold mb-4">Добави афтър</h2>
+            <p className="mb-2">
+              Клиент: <strong>{currentTicket.firstname} {currentTicket.lastname}</strong>
+            </p>
+            <p className="mb-4">
+              Трябва да се доплати <strong>{upgradeCost} лв.</strong>
+            </p>
+
+            {addAfterError && (
+              <div className="bg-red-100 text-red-700 p-2 rounded mb-2">
+                {addAfterError}
+              </div>
+            )}
+            {addAfterSuccessMsg && (
+              <div className="bg-green-100 text-green-700 p-2 rounded mb-2">
+                {addAfterSuccessMsg}{" "}
+                {change > 0 && (
+                  <span>Ресто: <strong>{change}</strong> лв.</span>
+                )}
+              </div>
+            )}
+
+            <div className="mb-4">
+              <label className="block font-medium mb-1">Получена сума (лв.):</label>
+              <input
+                type="number"
+                step="0.01"
+                value={paidAmount}
+                onChange={(e) => setPaidAmount(e.target.value)}
+                className="input input-bordered w-full"
+                // Disable input if success or while loading
+                disabled={!!addAfterSuccessMsg || isUpgrading}
+              />
+            </div>
+
+            {!addAfterSuccessMsg && (
+              <button
+                onClick={handleConfirmAddAfter}
+                className="btn btn-success w-full"
+                // disable the button if loading
+                disabled={isUpgrading}
+              >
+                {isUpgrading ? "Зареждане..." : "Потвърди"}
+              </button>
+            )}
+            {addAfterSuccessMsg && (
+              <button
+                onClick={closeAddAfterModal}
+                className="btn btn-primary w-full"
+              >
+                Затвори
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
