@@ -24,7 +24,6 @@ interface UserTableProps {
   eventId: string;
   isSeller: boolean | undefined;
   userUuid: string;
-
   // Нов проп: дали текущият user е Fasching Admin
   isFaschingAdmin: boolean;
 }
@@ -69,7 +68,7 @@ export default function UserTable({
   eventId,
   isSeller,
   userUuid,
-  isFaschingAdmin, // тук го деструктурираме
+  isFaschingAdmin,
 }: UserTableProps) {
   const [users, setUsers] = useState<Customer[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<Customer[]>([]);
@@ -113,6 +112,7 @@ export default function UserTable({
     enteredBoth = users.filter(u => u.isEnteredFasching && u.isEnteredAfter).length;
   }
 
+  // Примерни изчисления за приходи
   const faschingPortionRevenue = 10 * (paidF + paidFA);
   const afterPortionRevenue = 15 * paidFA;
   const totalFaschingRevenue = faschingPortionRevenue + afterPortionRevenue;
@@ -216,7 +216,7 @@ export default function UserTable({
       setAnswersError("Потребителят не е гласувал.");
       return;
     }
-    // Ако не сме админ – директно показваме грешка/нещо
+    // Ако не сме админ – директно показваме грешка
     if (!isFaschingAdmin) {
       setAnswersError("Нямате права да видите за кого е гласувал потребителят.");
       return;
@@ -472,12 +472,14 @@ export default function UserTable({
         <p>Зареждане...</p>
       ) : (
         <>
+          {/* Ако не е Fasching и не е seller, показваме бутона за масово изпращане */}
           {!isFasching && !isSeller && (
             <div className="mb-4">
               <SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} />
             </div>
           )}
 
+          {/* Статистика за нормални събития */}
           {!isFasching && (
             <div className="mb-4 p-3 border rounded bg-gray-50 text-sm">
               <ul className="space-y-1">
@@ -489,6 +491,7 @@ export default function UserTable({
             </div>
           )}
 
+          {/* Статистика за Fasching */}
           {isFasching && (
             <div className="mb-4 p-3 border rounded bg-gray-50 text-sm space-y-1">
               <p>Общо билети: {totalTickets}</p>
@@ -498,7 +501,7 @@ export default function UserTable({
               <p>Fasching+After: {faschingAfterCount}</p>
               <p className="mt-2 font-medium">Приходи: {totalFaschingRevenue} лв</p>
 
-              {/* Показваме бутона "Виж статистики" само ако сме FaschingAdmin */}
+              {/* Бутонът за статистики се вижда само за Fasching Admin */}
               {isFaschingAdmin && (
                 <button className="btn btn-secondary mt-3" onClick={handleOpenStatsModal}>
                   Виж статистики
@@ -507,6 +510,7 @@ export default function UserTable({
             </div>
           )}
 
+          {/* Търсене */}
           <div className="mb-4">
             <input
               type="text"
@@ -517,6 +521,7 @@ export default function UserTable({
             />
           </div>
 
+          {/* Таблица с билети */}
           <div className="overflow-x-auto">
             {isFasching ? (
               <table className="table table-auto w-full border rounded">
@@ -533,7 +538,7 @@ export default function UserTable({
                     <th>Дата/час</th>
                     <th>Статус</th>
                     <th>Гласувал?</th>
-                    {/* Колоната "Отговори" ще я показваме само ако isFaschingAdmin */}
+                    {/* Колоната "Отговори" виждат само FaschingAdmin */}
                     {isFaschingAdmin && <th>Отговори</th>}
                     <th>Опции</th>
                   </tr>
@@ -573,7 +578,6 @@ export default function UserTable({
                         <td>{statusLabel}</td>
                         <td className="text-center">{cust.votedAt ? "Да" : "Не"}</td>
 
-                        {/* Само администратор може да натисне бутона за "Отговори" */}
                         {isFaschingAdmin && (
                           <td>
                             <button
@@ -812,7 +816,8 @@ export default function UserTable({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 relative max-h-[80vh] overflow-y-auto"
+              // Увеличаваме малко maxHeight и широчината за по-добра мобилна четимост
+              className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 relative max-h-[90vh] overflow-y-auto"
               initial={{ y: 50, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
@@ -824,11 +829,14 @@ export default function UserTable({
                 ✕
               </button>
 
-              <h2 className="text-xl font-bold mb-4">Fasching - Резултати от гласуването</h2>
+              <h2 className="text-xl font-bold mb-4 text-center">
+                Fasching - Резултати от гласуването
+              </h2>
+
               {statsLoading ? (
-                <p>Зареждане на статистиките...</p>
+                <p className="text-center">Зареждане на статистиките...</p>
               ) : Object.keys(faschingStats).length === 0 ? (
-                <p>Все още няма гласове</p>
+                <p className="text-center">Все още няма гласове</p>
               ) : (
                 <div className="space-y-6">
                   {Object.entries(faschingStats).map(([categoryTitle, items]) => {
@@ -838,55 +846,67 @@ export default function UserTable({
                     );
 
                     return (
-                      <div key={categoryTitle} className="border rounded-lg p-4 bg-gray-50 shadow-sm">
-                        <h3 className="font-semibold text-lg mb-3 text-purple-700">
+                      <div
+                        key={categoryTitle}
+                        className="border rounded-lg p-4 bg-gray-50 shadow-sm"
+                      >
+                        <h3 className="font-semibold text-lg mb-3 text-purple-700 break-words">
                           Категория: <span className="underline">{categoryTitle}</span>
                         </h3>
-                        <table className="w-full table-auto text-sm border-collapse">
-                          <thead>
-                            <tr className="border-b bg-gray-200">
-                              <th className="p-2 text-left">Номиниран</th>
-                              <th className="p-2 text-left">Гласове</th>
-                              <th className="p-2 w-full">Прогрес</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {items.map((nom, i) => {
-                              const barWidth =
-                                maxVotes === 0 ? 0 : (nom.votes / maxVotes) * 100;
-                              return (
-                                <tr key={nom.nomineeId} className="border-b last:border-none">
-                                  <td className="p-2">
-                                    {i === 0 && (
-                                      <span className="font-bold text-green-600 mr-1">
-                                        (Winner!)
-                                      </span>
-                                    )}
-                                    {nom.nomineeName}
-                                  </td>
-                                  <td className="p-2">{nom.votes}</td>
-                                  <td className="p-2">
-                                    <div className="bg-gray-300 rounded-full h-3 w-full">
-                                      <motion.div
-                                        className="bg-blue-500 h-3 rounded-full"
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${barWidth}%` }}
-                                        transition={{ duration: 0.4 }}
-                                      />
-                                    </div>
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
+                        <div className="overflow-x-auto">
+                          <table className="w-full table-auto text-sm border-collapse">
+                            <thead>
+                              <tr className="border-b bg-gray-200">
+                                <th className="p-2 text-left">Номиниран</th>
+                                <th className="p-2 text-left">Гласове</th>
+                                <th className="p-2 w-full">Прогрес</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {items.map((nom, i) => {
+                                const barWidth =
+                                  maxVotes === 0 ? 0 : (nom.votes / maxVotes) * 100;
+                                return (
+                                  <tr
+                                    key={nom.nomineeId}
+                                    className="border-b last:border-none"
+                                  >
+                                    <td className="p-2">
+                                      {/* Показваме (Winner!) само за първия в списъка */}
+                                      {i === 0 && (
+                                        <span className="font-bold text-green-600 mr-1">
+                                          (Winner!)
+                                        </span>
+                                      )}
+                                      {nom.nomineeName}
+                                    </td>
+                                    <td className="p-2">{nom.votes}</td>
+                                    <td className="p-2">
+                                      <div className="bg-gray-300 rounded-full h-3 w-full">
+                                        <motion.div
+                                          className="bg-blue-500 h-3 rounded-full"
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${barWidth}%` }}
+                                          transition={{ duration: 0.4 }}
+                                        />
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
               )}
 
-              <button onClick={handleCloseStatsModal} className="btn btn-primary mt-4 w-full">
+              <button
+                onClick={handleCloseStatsModal}
+                className="btn btn-primary mt-4 w-full"
+              >
                 Затвори
               </button>
             </motion.div>
