@@ -37,14 +37,21 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
   const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
   const userUuid = decodedToken.uuid;
 
+  // Вземаме и дали е FaschingAdmin
   const currentUserDb = await db
     .select({
       email: users.email,
+      isFaschingAdmin: users.isFaschingAdmin, // четем новата колона
     })
     .from(users)
     .where(eq(users.uuid, userUuid))
     .execute();
   const currentUser = currentUserDb[0];
+
+  if (!currentUser) {
+    notFound();
+    return;
+  }
 
   const currentEventDb = await db.select({
     eventName: events.eventName,
@@ -85,7 +92,8 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
     isSeller = true;
   }
 
-  // Ако събитието е fasching (фашинг 2025), няма да се показват определени компоненти и гридът
+  // Ако събитието е fasching (фашинг 2025), няма да се показват определени компоненти
+  // (т.е. hideComponents = true)
   const hideComponents = params.uuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
 
   return (
@@ -97,14 +105,15 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
       />
 
       {hideComponents ? (
-        // Ако е "фашинг", не използваме грид – показваме само таблицата с потребители
         <UserTable 
           eventId={params.uuid} 
           isSeller={isSeller} 
           userUuid={userUuid} 
+          // Предаваме дали този потребител е FaschingAdmin
+          //@ts-expect-error
+          isFaschingAdmin={currentUser.isFaschingAdmin}
         />
       ) : (
-        // Ако не е "фашинг", използваме грид със редактори и таблица с потребители
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white shadow rounded p-4 text-black">
             <EventDescriptionEditor
@@ -143,10 +152,12 @@ async function EventManagementPage({ params }: { params: { uuid: string } }) {
             eventId={params.uuid} 
             isSeller={isSeller} 
             userUuid={userUuid} 
+            isFaschingAdmin={currentUser.isFaschingAdmin}
           />
         </div>
       )}
 
+      {/* Продавачи на билети */}
       <div className="bg-white shadow rounded p-4 mt-4">
         <h2 className="text-xl font-semibold mb-3">Продавачи на билети</h2>
         <div>

@@ -505,6 +505,13 @@
       "when": 1740411815233,
       "tag": "0071_ambiguous_goliath",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "5",
+      "when": 1740851020654,
+      "tag": "0072_kind_dagger",
+      "breakpoints": true
     }
   ]
 }

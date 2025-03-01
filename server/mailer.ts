@@ -3,7 +3,7 @@
 import nodemailer from "nodemailer";
 import bwipjs from "bwip-js";
 
-// Настройка на nodemailer transporter
+// Настройка на nodemailer transporter (SMTP)
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_SERVER_HOST,
   port: Number(process.env.EMAIL_SERVER_PORT),
@@ -32,8 +32,9 @@ async function generateBarcodeImage(ticketCode: string): Promise<Buffer> {
 }
 
 /**
- * Изпраща имейл за „основен“ билет Fasching или Fasching + After, 
+ * Изпраща имейл за „основен“ билет Fasching или Fasching + After 
  * при първоначално плащане.
+ * + Позволява да подадем и линк за гласуване (voteUrl).
  */
 export async function sendFaschingTicketEmail({
   guestEmail,
@@ -42,6 +43,7 @@ export async function sendFaschingTicketEmail({
   ticketCode,
   ticketType,
   ticketUrl,
+  voteUrl, // <-- добавяме гласуване
 }: {
   guestEmail: string;
   guestFirstName: string;
@@ -49,12 +51,14 @@ export async function sendFaschingTicketEmail({
   ticketCode: string;
   ticketType: string;
   ticketUrl: string;
+  voteUrl?: string; // може да е optional
 }) {
   const typeLabel = ticketType === "fasching" ? "Фашинг" : "Фашинг + Афтър";
 
-  // Генерираме баркод
+  // Генерираме баркод като PNG
   const barcodeBuffer = await generateBarcodeImage(ticketCode);
 
+  // Подготвяме HTML
   const htmlContent = `
   <html>
     <head>
@@ -104,6 +108,10 @@ export async function sendFaschingTicketEmail({
           font-size: 12px;
           color: #777;
         }
+        .highlight {
+          font-weight: bold;
+          color: #e74c3c; /* червеникав нюанс */
+        }
       </style>
     </head>
     <body>
@@ -114,8 +122,25 @@ export async function sendFaschingTicketEmail({
         <div class="content">
           <p>Здравейте, <strong>${guestFirstName} ${guestLastName}</strong>!</p>
           <p>Вашият билет за ${typeLabel} 2025 е потвърден и платен. Можете да го отворите, като натиснете бутона по-долу.</p>
-          <p><strong>Код на билета:</strong> ${ticketCode}</p>
-          <p><a class="btn" href="${ticketUrl}" target="_blank">Преглед на билета</a></p>
+          <p><strong>Код на билета:</strong> <span class="highlight">${ticketCode}</span></p>
+          <p>
+            <a class="btn" href="${ticketUrl}" target="_blank">
+              Преглед на билета
+            </a>
+          </p>
+          ${
+            voteUrl
+              ? `
+          <hr/>
+          <p>Можете да гласувате за своите фаворити, номинирани на Фашинг 2025, като натиснете тук:</p>
+          <p>
+            <a class="btn" href="${voteUrl}" target="_blank">
+              Гласувай сега
+            </a>
+          </p>
+          `
+              : ""
+          }
           <p>Очакваме ви с нетърпение!</p>
         </div>
         <div class="footer">
@@ -126,6 +151,7 @@ export async function sendFaschingTicketEmail({
   </html>
   `;
 
+  // Изпращаме имейла
   const mailOptions = {
     from: "no-reply@eventify.bg",
     to: guestEmail,
@@ -145,8 +171,7 @@ export async function sendFaschingTicketEmail({
 
 /**
  * Изпраща имейл при "upgrade" от fasching към fasching_after (доплащане).
- * Ако желаете, може да ползвате същия sendFaschingTicketEmail, 
- * но тук го правим в отделна функция с друг текст.
+ * Може също да добавим voteUrl тук, ако искаме (примерно, ако гостът все още не е гласувал).
  */
 export async function sendFaschingAfterUpgradeEmail({
   guestEmail,
@@ -161,7 +186,6 @@ export async function sendFaschingAfterUpgradeEmail({
   ticketCode?: string;
   ticketUrl: string;
 }) {
-  // Генерираме баркод (ако ticketCode != null)
   let attachments = [];
   if (ticketCode) {
     const barcodeBuffer = await generateBarcodeImage(ticketCode);
@@ -231,7 +255,7 @@ export async function sendFaschingAfterUpgradeEmail({
         <div class="content">
           <p>Здравей, <strong>${guestFirstName} ${guestLastName}</strong>!</p>
           <p>Поздравления! Твоят билет за Фашинг беше ъпгрейднат до <strong>Fasching + After</strong>.</p>
-          <p><strong>Код на билета:</strong> ${ticketCode}</p>
+          <p><strong>Код на билета:</strong> ${ticketCode || ""}</p>
           <p><a class="btn" href="${ticketUrl}" target="_blank">Преглед на билета</a></p>
           <p>Очакваме ви с нетърпение!</p>
         </div>

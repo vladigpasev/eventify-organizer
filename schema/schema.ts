@@ -1,6 +1,5 @@
-//Copyright (C) 2024  Vladimir Pasev
 import { relations } from 'drizzle-orm';
-import { pgTable, serial, varchar, text, uuid, boolean, timestamp, numeric, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, uuid, boolean, timestamp, numeric, integer, index } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -20,6 +19,9 @@ export const users = pgTable('users', {
   payoutId: varchar('payoutId', { length: 100 }),
   customerId: varchar('customerId', { length: 100 }),
   planType: varchar('planType', { length: 100 }).default("Hobby"),
+
+  // Нова колона: дали потребителят е администратор за Fasching
+  isFaschingAdmin: boolean('isFaschingAdmin').default(false),
 });
 
 export const events = pgTable('events', {
@@ -57,7 +59,7 @@ export const eventCustomers = pgTable('eventCustomers', {
   email: varchar('email', { length: 100 }).notNull(),
   guestCount: numeric('guestCount').notNull().default('1'),
   eventUuid: varchar('eventUuid', { length: 100 }).notNull(),
-  ticketToken: varchar('ticketToken', { length: 255 }), // New field for the ticket token
+  ticketToken: varchar('ticketToken', { length: 255 }),
   isEntered: boolean('isEntered').default(false),
   clerkUserId: varchar('clerkUserId', { length: 100 }),
   hidden: boolean('hidden').default(false),
@@ -65,7 +67,7 @@ export const eventCustomers = pgTable('eventCustomers', {
   sentEmail: boolean('sentEmail').default(false),
   isPaperTicket: boolean('isPaperTicket').default(false),
   paperTicket: varchar('paperTicket', { length: 255 }),
-  createdAt: timestamp('created_at').defaultNow(), // Added createdAt field
+  createdAt: timestamp('created_at').defaultNow(),
   sellerUuid: varchar('sellerUuid', { length: 100 }),
   reservation: boolean('reservation').default(false),
   tombola_weight: numeric('tombola_weight'),
@@ -89,7 +91,6 @@ export const paperTickets = pgTable('paperTickets', {
   nineDigitCode: varchar('nineDigitCode', { length: 9 }).notNull().unique(),
 });
 
-
 export const comments = pgTable('comments', {
   id: serial('id').primaryKey(),
   uuid: uuid('uuid').default(`uuid_generate_v4()`).unique(),
@@ -110,8 +111,6 @@ export const ratings = pgTable('ratings', {
   feedback: text('feedback'),
 });
 
-// ... предишното съдържание
-
 // Добавяме колона "sellerId" във fasching_requests
 export const faschingRequests = pgTable("fasching_requests", {
   id: serial("id").primaryKey(),
@@ -121,10 +120,7 @@ export const faschingRequests = pgTable("fasching_requests", {
   contactPhone: varchar("contact_phone", { length: 30 }).notNull(),
   paid: boolean("paid").notNull().default(false),
 
-  // Колона за идентификатор на продавача (кой е маркирал поръчката като платена)
-  sellerId: varchar("seller_id", { length: 100 }), // може да е nullable
-
-  // Новите колони за съгласия
+  sellerId: varchar("seller_id", { length: 100 }),
   agreedToTerms: boolean("agreed_to_terms").notNull().default(false),
   agreedToPrivacy: boolean("agreed_to_privacy").notNull().default(false),
   agreedToCookies: boolean("agreed_to_cookies").notNull().default(false),
@@ -133,32 +129,54 @@ export const faschingRequests = pgTable("fasching_requests", {
   deleted: boolean("deleted").notNull().default(false),
 });
 
-// Примерно:
 export const faschingTickets = pgTable("fasching_tickets", {
   id: serial("id").primaryKey(),
+
   requestId: integer("request_id")
     .references(() => faschingRequests.id)
     .notNull(),
-  ticketType: varchar("ticket_type", { length: 20 }).notNull(),    // fasching | fasching_after
+  ticketType: varchar("ticket_type", { length: 20 }).notNull(),
   guestFirstName: varchar("guest_first_name", { length: 255 }).notNull(),
   guestLastName: varchar("guest_last_name", { length: 255 }).notNull(),
   guestEmail: varchar("guest_email", { length: 255 }).notNull(),
   guestClassGroup: varchar("guest_class_group", { length: 50 }).notNull(),
+
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 
-  // 10-цифрен код
-  ticketCode: varchar("ticket_code", { length: 10 }),
-  guestSchoolName: varchar("guest_school_name", { length: 255 }),   // nullable
-  guestExternalGrade: varchar("guest_external_grade", { length: 50 }), // nullable
-  // ➜ Новите полета:
+  ticketCode: varchar("ticket_code", { length: 50 }),
+  guestSchoolName: varchar("guest_school_name", { length: 255 }),
+  guestExternalGrade: varchar("guest_external_grade", { length: 50 }),
+
   entered_fasching: boolean("entered_fasching").notNull().default(false),
   entered_after: boolean("entered_after").notNull().default(false),
-  upgraderSellerId: varchar("upgrader_seller_id", { length: 100 }), // nullable
 
+  voteToken: varchar("vote_token", { length: 255 }),
+  votedAt: timestamp("voted_at", { withTimezone: true }),
+  upgraderSellerId: varchar("upgrader_seller_id", { length: 100 }),
 });
 
+export const faschingVotes = pgTable(
+  "fasching_votes",
+  {
+    id: serial("id").primaryKey(),
+    ticketId: integer("ticket_id")
+      .references(() => faschingTickets.id)
+      .notNull(),
 
-// Rелaции (не се променят съществено)
+    categoryId: varchar("category_id", { length: 50 }).notNull(),
+    nomineeId: varchar("nominee_id", { length: 50 }).notNull(),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => {
+    return {
+      catIndex: index("idx_fv_category").on(table.categoryId),
+      catNomIndex: index("idx_fv_cat_nom").on(table.categoryId, table.nomineeId),
+    };
+  }
+);
+
+// Rелaции
 export const faschingRequestsRelations = relations(faschingRequests, ({ many }) => ({
   tickets: many(faschingTickets),
 }));
