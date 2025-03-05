@@ -29,13 +29,13 @@ function AddCustomer({
   const [isModalOpen, setModalOpen] = useState(false);
 
   // ---- Не-фашинг (хартиени билети) ----
-  const [paperTicketAccessToken, setPaperTicketAccessToken] = useState<string|null>(null);
-  const [nineDigitCode, setNineDigitCode] = useState<string|null>(null);
+  const [paperTicketAccessToken, setPaperTicketAccessToken] = useState<string | null>(null);
+  const [nineDigitCode, setNineDigitCode] = useState<string | null>(null);
   const [isQrScannerOpen, setQrScannerOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   // ---- Фашинг променливи ----
-  const [paymentCode, setPaymentCode] = useState(''); 
+  const [paymentCode, setPaymentCode] = useState('');
   const [faschingOrder, setFaschingOrder] = useState<any>(null);
   const [faschingTickets, setFaschingTickets] = useState<any[]>([]);
   const [faschingCount, setFaschingCount] = useState(0);
@@ -43,7 +43,9 @@ function AddCustomer({
   const [totalDue, setTotalDue] = useState(0);
   const [paidAmount, setPaidAmount] = useState('');
 
-  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  // Показваме кратко съобщение (вместо голям банер) за успех
+  const [paymentSuccessMessage, setPaymentSuccessMessage] = useState<string | null>(null);
+
   const [changeAmount, setChangeAmount] = useState(0);
 
   // За да показваме "Зареждане..." на бутона "Потвърди плащането"
@@ -83,7 +85,7 @@ function AddCustomer({
       setFaschingAfterCount(0);
       setTotalDue(0);
       setPaidAmount('');
-      setShowPaymentSuccess(false);
+      setPaymentSuccessMessage(null);
       setChangeAmount(0);
       setIsPaymentLoading(false);
 
@@ -134,12 +136,13 @@ function AddCustomer({
   // ЛОГИКА ЗА ФАШИНГ
   // -----------------------------
   const checkFaschingCode = async (code: string) => {
+    // Изчистваме предишни данни
     setFaschingOrder(null);
     setFaschingTickets([]);
     setFaschingCount(0);
     setFaschingAfterCount(0);
     setTotalDue(0);
-    setShowPaymentSuccess(false);
+    setPaymentSuccessMessage(null); // скриваме старо успешно съобщение
     setChangeAmount(0);
     setErrorMessage('');
 
@@ -187,6 +190,9 @@ function AddCustomer({
    * При потвърждаване на плащането:
    * - Вече подаваме sellerId: userUuid
    * - Показваме loading в бутона
+   * - След успех: не затваряме модала, ами:
+   *   1) Показваме кратко съобщение "Успешно платено! Ресто: X лв" с малък шрифт.
+   *   2) Автоматично стартираме отново QR скенера за ново сканиране.
    */
   const handleConfirmPayment = async () => {
     if (!faschingOrder) return;
@@ -221,9 +227,27 @@ function AddCustomer({
         setIsPaymentLoading(false);
         return;
       }
+
+      // ✅ Успешно плащане:
       setChangeAmount(resp.change ?? 0);
-      setShowPaymentSuccess(true);
-      onCustomerAdded();
+      onCustomerAdded(); // опресни таблицата отвън
+
+      // Сетваме кратко съобщение вместо голям банер
+      setPaymentSuccessMessage(`Успешно платено! Ресто: ${resp.change || 0} лв`);
+
+      // Изчистваме текущата "поръчка" и полета:
+      setFaschingOrder(null);
+      setFaschingTickets([]);
+      setFaschingCount(0);
+      setFaschingAfterCount(0);
+      setTotalDue(0);
+      setPaidAmount('');
+      setErrorMessage('');
+
+      // Веднага стартираме ново сканиране:
+      setIsManualEntry(false);
+      setQrScannerOpen(true);
+
     } catch (error) {
       console.error('Error confirming fasching payment:', error);
       setErrorMessage('Грешка при потвърждаване на плащането');
@@ -246,13 +270,13 @@ function AddCustomer({
     if (type === 'fasching_after' || type === 'fasching-after') {
       return '🌃 Фашинг + Афтър';
     }
-    return type; 
+    return type;
   };
 
   return (
     <div>
-      <button 
-        onClick={toggleModal} 
+      <button
+        onClick={toggleModal}
         className="btn bg-blue-500 hover:bg-blue-600 text-white flex items-center gap-2"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width={20} fill='currentColor'>
@@ -271,14 +295,23 @@ function AddCustomer({
 
       <AnimatePresence>
         {isModalOpen && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 px-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <motion.div 
-              className="bg-white p-6 rounded-lg max-w-xl w-full relative"
+            <motion.div
+              className="
+          bg-white
+          p-6
+          rounded-lg
+          w-full
+          max-w-xl
+          relative
+          max-h-[90vh]
+          overflow-auto
+        "
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
@@ -306,32 +339,22 @@ function AddCustomer({
                   <h2 className="text-2xl mb-4 font-bold text-center text-gray-800">
                     Потвърждаване на плащане (Фашинг)
                   </h2>
+
+                  {/* Кратко съобщение при успешно плащане */}
+                  {paymentSuccessMessage && (
+                    <div className="text-green-600 text-sm mb-2 font-semibold">
+                      {paymentSuccessMessage}
+                    </div>
+                  )}
+
                   {errorMessage && (
                     <div className="text-red-600 mb-2 font-semibold">
                       {errorMessage}
                     </div>
                   )}
 
-                  <AnimatePresence>
-                    {showPaymentSuccess && (
-                      <motion.div
-                        className="bg-green-100 border border-green-300 rounded p-3 mb-4"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                      >
-                        <h3 className="text-green-800 font-semibold text-lg">
-                          ✅ Плащането е потвърдено!
-                        </h3>
-                        <p className="text-gray-700">
-                          Ресто: <span className="font-bold">{changeAmount}</span> лв.
-                        </p>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Ако не сме намерили поръчка */}
-                  {!faschingOrder && !showPaymentSuccess && (
+                  {/* Ако нямаме открита поръчка и не сме платили */}
+                  {!faschingOrder && (
                     <div className="space-y-4">
                       <div className="flex justify-center gap-4 mb-2">
                         <button
@@ -393,13 +416,14 @@ function AddCustomer({
                         Откажи сканиране
                       </button>
                       <p className="text-xs text-gray-500 mt-2">
-                        Уверете се, че сте на <strong>HTTPS</strong> или <strong>localhost</strong>, 
+                        Уверете се, че сте на <strong>HTTPS</strong> или <strong>localhost</strong>,
                         и сте разрешили достъп до камерата.
                       </p>
                     </div>
                   )}
 
-                  {faschingOrder && !faschingOrder.paid && !showPaymentSuccess && (
+                  {/* Ако имаме валидна (но неплатена) поръчка */}
+                  {faschingOrder && !faschingOrder.paid && (
                     <div className="mt-4 space-y-4">
                       <div className="bg-gray-100 p-3 rounded shadow">
                         <h3 className="text-lg font-semibold mb-1">
@@ -407,7 +431,7 @@ function AddCustomer({
                         </h3>
                         <p className="text-sm text-gray-600">
                           <strong>Контакт:</strong> {faschingOrder.contactEmail}, {faschingOrder.contactPhone}
-                          <br/>
+                          <br />
                           <strong>Статус:</strong>{" "}
                           <span className="text-red-600 font-semibold">Неплатена</span>
                         </p>
@@ -499,7 +523,7 @@ function AddCustomer({
               Откажи сканиране
             </button>
             <p className="text-xs text-gray-500 mt-2">
-              Уверете се, че сте на <strong>HTTPS</strong> или <strong>localhost</strong>, 
+              Уверете се, че сте на <strong>HTTPS</strong> или <strong>localhost</strong>,
               и сте разрешили достъп до камерата.
             </p>
           </div>
