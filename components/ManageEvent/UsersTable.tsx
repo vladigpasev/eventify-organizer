@@ -600,7 +600,7 @@ export default function UserTable({
                         <td>
                           {cust.ticket_type}
                           {cust.hiddenafter && cust.ticket_type === "fasching-after" && (
-                            <span className="ml-1 text-xs text-gray-600">(скрит After)</span>
+                            <span className="ml-1 text-xs text-gray-600">()</span>
                           )}
                         </td>
                         <td>{cust.createdAt}</td>
