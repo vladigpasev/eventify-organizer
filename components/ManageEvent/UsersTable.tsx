@@ -322,11 +322,11 @@ export default function UserTable({
 
     if (isFasching) {
       const classesOrder = [
-        "8а","8б","8в","8г","8д","8е","8ж",
-        "9а","9б","9в","9г","9д","9е","9ж",
-        "10а","10б","10в","10г","10д","10е","10ж",
-        "11а","11б","11в","11г","11д","11е","11ж",
-        "12а","12б","12в","12г","12д","12е","12ж",
+        "8а", "8б", "8в", "8г", "8д", "8е", "8ж",
+        "9а", "9б", "9в", "9г", "9д", "9е", "9ж",
+        "10а", "10б", "10в", "10г", "10д", "10е", "10ж",
+        "11а", "11б", "11в", "11г", "11д", "11е", "11ж",
+        "12а", "12б", "12в", "12г", "12д", "12е", "12ж",
       ];
       function getPriority(c: Customer) {
         const cg = c.paperTicket || "";
@@ -566,19 +566,17 @@ export default function UserTable({
                     const rowClass = getFaschingRowColor(cust);
                     const statusLabel = getFaschingStatusLabel(cust);
 
-                    // дали е "fasching" или hidden after
-                    const isFaschingTicket =
-                      cust.ticket_type === "fasching" ||
-                      (cust.ticket_type === "fasching-after" && cust.hiddenafter);
-
+                    // 1) Проверяваме дали билетът е неплатен
                     const isUnpaid = cust.reservation === true;
-                    const isEighthGrade = [
-                      "8а","8б","8в","8г","8д","8е","8ж",
-                    ].includes(cust.paperTicket || "");
-                    
-                    // Ако е "hidden after", се държи все едно е F
-                    const disableAddAfter =
-                      isUnpaid || isFaschingTicket || isEighthGrade;
+                    // 2) Ако е истински After (не hidden), вече няма какво да ъпгрейдваме
+                    const isRealAfter = (cust.ticket_type === "fasching-after" && !cust.hiddenafter);
+                    // 3) Осмокласници (по ваша политика)
+                    const isEighthGrade = ["8а", "8б", "8в", "8г", "8д", "8е", "8ж"].includes(cust.paperTicket || "");
+
+                    // Бутонът е неактивен само ако билетът е неплатен, 
+                    // или вече е "fasching-after" реален (не hidden), 
+                    // или е осмокласник
+                    const disableAddAfter = isUnpaid || isRealAfter || isEighthGrade;
 
                     return (
                       <tr key={idx} className={rowClass}>
@@ -602,13 +600,14 @@ export default function UserTable({
                         <td>
                           {cust.ticket_type}
                           {cust.hiddenafter && cust.ticket_type === "fasching-after" && (
-                            <span className="ml-1 text-xs text-gray-600">()</span>
+                            <span className="ml-1 text-xs text-gray-600">(скрит After)</span>
                           )}
                         </td>
                         <td>{cust.createdAt}</td>
                         <td>{statusLabel}</td>
                         <td className="text-center">{cust.votedAt ? "Да" : "Не"}</td>
 
+                        {/* Ако е Fasching Admin -> показваме бутон "Отговори" за гласуване */}
                         {isFaschingAdmin && (
                           <td>
                             <button
@@ -622,21 +621,23 @@ export default function UserTable({
                         )}
 
                         <td>
-                          {/* Add After бутона */}
-                          {cust.ticket_type === "fasching" && (
-                            <button
-                              className="btn btn-sm btn-primary"
-                              disabled={disableAddAfter}
-                              onClick={() => openAddAfterModal(cust)}
-                            >
-                              Add After
-                            </button>
-                          )}
+                          {/* Бутонът се вижда само, ако Е "fasching" или "fasching-after" HIDDEN => т.е. все едно Fasching */}
+                          {(cust.ticket_type === "fasching" ||
+                            (cust.ticket_type === "fasching-after" && cust.hiddenafter)) && (
+                              <button
+                                className="btn btn-sm btn-primary"
+                                disabled={disableAddAfter}
+                                onClick={() => openAddAfterModal(cust)}
+                              >
+                                Add After
+                              </button>
+                            )}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
+
               </table>
             ) : (
               <table className="table table-auto w-full border rounded">
