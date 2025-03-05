@@ -52,7 +52,7 @@ interface Customer {
   isEnteredAfter?: boolean;
   votedAt?: string | null;
 
-  // Ново поле
+  // Ново поле за скрит After (ако искаме да го броим като Fasching)
   hiddenafter?: boolean;
 }
 
@@ -67,6 +67,7 @@ interface NomineeStat {
   votes: number;
 }
 
+// Основен компонент
 export default function UserTable({
   eventId,
   isSeller,
@@ -79,7 +80,7 @@ export default function UserTable({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // Limit & tombola
+  // Лимити и т.н.
   const [limit, setLimit] = useState<string | null>(null);
   const [limitLoading, setLimitLoading] = useState<boolean>(false);
   const [isLimitChanged, setIsLimitChanged] = useState<boolean>(false);
@@ -87,11 +88,11 @@ export default function UserTable({
   const [tombolaPrice, setTombolaPrice] = useState<string | null>(null);
   const [isTombolaPriceChanged, setIsTombolaPriceChanged] = useState<boolean>(false);
 
-  // Is Fasching?
+  // Проверка дали е Fasching
   const isFasching = eventId === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
 
   // --------------------
-  // Основни статистики
+  // Основни статистики (не-фашинг)
   // --------------------
   const totalTickets = users.length;
   const paidTickets = users.filter(u => !u.reservation).length;
@@ -101,24 +102,24 @@ export default function UserTable({
   // --------------------
   // Fasching статистики
   // --------------------
-  let faschingOnlyCount = 0;
-  let faschingAfterCount = 0;
-  let paidF = 0;
-  let paidFA = 0;
+  // Ако "fasching-after" + hiddenafter => третираме го като чист fasching
+  const isFaschingTicket = (u: Customer) =>
+    u.ticket_type === "fasching" || (u.ticket_type === "fasching-after" && u.hiddenafter);
+
+  // Ако "fasching-after" без hidden => реален after
+  const isFaschingAfterTicket = (u: Customer) =>
+    u.ticket_type === "fasching-after" && !u.hiddenafter;
+
+  let faschingOnlyCount = 0;   // общ брой "Fasching portion"
+  let faschingAfterCount = 0; // общ брой "Fasching+After" (не-hidden)
+  let paidF = 0;              // платени Fasching
+  let paidFA = 0;             // платени Fasching+After
+
   let enteredFasching = 0;
   let enteredAfter = 0;
   let enteredBoth = 0;
 
   if (isFasching) {
-    // Определяме дали да броим билета като fasching или fasching-after
-    // ако ticket_type === "fasching-after" И hiddenafter = true, го броим като fasching
-    const isFaschingTicket = (u: Customer) =>
-      u.ticket_type === "fasching" ||
-      (u.ticket_type === "fasching-after" && u.hiddenafter === true);
-
-    const isFaschingAfterTicket = (u: Customer) =>
-      u.ticket_type === "fasching-after" && !u.hiddenafter;
-
     faschingOnlyCount = users.filter(isFaschingTicket).length;
     faschingAfterCount = users.filter(isFaschingAfterTicket).length;
 
@@ -130,15 +131,16 @@ export default function UserTable({
     enteredBoth = users.filter(u => u.isEnteredFasching && u.isEnteredAfter).length;
   }
 
-  // Примерни изчисления за приходи (Fasching)
-  // Fasching portion = 10 лв, After portion = 15 лв
-  const faschingPortionRevenue = 10 * (paidF + paidFA);  // paidF включва всички F и hiddenAfter
-  const afterPortionRevenue = 15 * paidFA;               // само не-hidden after
+  // Приходи (Fasching)
+  // Fasching portion => 10 * (paidF + paidFA)
+  // After portion => 15 * paidFA
+  const faschingPortionRevenue = 10 * (paidF + paidFA);
+  const afterPortionRevenue = 15 * paidFA;
   const totalFaschingRevenue = faschingPortionRevenue + afterPortionRevenue;
 
-  // ---------------
-  // Add After Modal
-  // ---------------
+  // -------------------------------
+  // Modal: "Add After"
+  // -------------------------------
   const [isAddAfterModalOpen, setAddAfterModalOpen] = useState(false);
   const [currentTicket, setCurrentTicket] = useState<Customer | null>(null);
   const [paidAmount, setPaidAmount] = useState<string>("");
@@ -194,9 +196,9 @@ export default function UserTable({
     }
   }
 
-  // ---------------
-  // Stats Modal
-  // ---------------
+  // -------------------------------
+  // Modal: "Fasching Stats" (пр. гласуване)
+  // -------------------------------
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
   const [faschingStats, setFaschingStats] = useState<Record<string, NomineeStat[]>>({});
@@ -205,7 +207,7 @@ export default function UserTable({
     setStatsModalOpen(true);
     try {
       setStatsLoading(true);
-      // Предаваме дали е FaschingAdmin. Ако не е, функцията ще хвърли грешка.
+      // зареждаме някаква статистика (пример)
       const data = await getFaschingStats({ userIsAdmin: isFaschingAdmin });
       setFaschingStats(data);
     } catch (err) {
@@ -218,9 +220,9 @@ export default function UserTable({
     setStatsModalOpen(false);
   }
 
-  // ---------------
-  // See Answers Modal
-  // ---------------
+  // -------------------------------
+  // Modal: "Answers" (гласове на потребител)
+  // -------------------------------
   const [answersModalOpen, setAnswersModalOpen] = useState(false);
   const [answersLoading, setAnswersLoading] = useState(false);
   const [answers, setAnswers] = useState<UserVote[]>([]);
@@ -235,12 +237,10 @@ export default function UserTable({
       setAnswersError("Потребителят не е гласувал.");
       return;
     }
-    // Ако не сме админ – директно показваме грешка
     if (!isFaschingAdmin) {
       setAnswersError("Нямате права да видите за кого е гласувал потребителят.");
       return;
     }
-
     try {
       setAnswersLoading(true);
       const ticketId = parseInt(cust.uuid, 10);
@@ -248,7 +248,6 @@ export default function UserTable({
         setAnswersError("Невалиден ticketId");
         return;
       }
-      // Извикваме getTicketVotes с userIsAdmin
       const votes = await getTicketVotes(ticketId, { userIsAdmin: isFaschingAdmin });
       setAnswers(votes);
     } catch (err: any) {
@@ -262,9 +261,9 @@ export default function UserTable({
     setAnswersModalOpen(false);
   }
 
-  // ---------------
-  // Data fetching
-  // ---------------
+  // -------------------------------
+  // Fetching на данни
+  // -------------------------------
   async function fetchUsers() {
     try {
       setIsLoading(true);
@@ -294,6 +293,9 @@ export default function UserTable({
     }
   }
 
+  // -------------------------------
+  // useEffect => зареждане
+  // -------------------------------
   useEffect(() => {
     fetchUsers();
     if (!isFasching) {
@@ -302,7 +304,9 @@ export default function UserTable({
     }
   }, [eventId, isFasching]);
 
-  // Searching & sorting
+  // -------------------------------
+  // Търсене + сортиране
+  // -------------------------------
   useEffect(() => {
     const lower = searchTerm.toLowerCase();
     const tmp = users.filter(u => {
@@ -321,6 +325,7 @@ export default function UserTable({
     });
 
     if (isFasching) {
+      // Сортираме по клас, после fallback по име
       const classesOrder = [
         "8а", "8б", "8в", "8г", "8д", "8е", "8ж",
         "9а", "9б", "9в", "9г", "9д", "9е", "9ж",
@@ -352,6 +357,7 @@ export default function UserTable({
         return nameA.localeCompare(nameB);
       });
     } else {
+      // Не-Fasching => сортираме само по име
       tmp.sort((a, b) => {
         const nameA = (a.firstname + a.lastname).toLowerCase();
         const nameB = (b.firstname + b.lastname).toLowerCase();
@@ -362,12 +368,14 @@ export default function UserTable({
     setFilteredUsers(tmp);
   }, [searchTerm, users, isFasching]);
 
-  // Limit/tombola
-  const handleLimitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // -------------------------------
+  // Actions: limit/tombola
+  // -------------------------------
+  function handleLimitChange(e: React.ChangeEvent<HTMLInputElement>) {
     setLimit(e.target.value);
     setIsLimitChanged(true);
-  };
-  const handleLimitSubmit = async () => {
+  }
+  async function handleLimitSubmit() {
     setLimitLoading(true);
     try {
       await changeLimit({ limit, eventUuid: eventId });
@@ -377,12 +385,12 @@ export default function UserTable({
     } finally {
       setLimitLoading(false);
     }
-  };
-  const handleTombolaPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  }
+  function handleTombolaPriceChange(e: React.ChangeEvent<HTMLInputElement>) {
     setTombolaPrice(e.target.value);
     setIsTombolaPriceChanged(true);
-  };
-  const handleTombolaPriceSubmit = async () => {
+  }
+  async function handleTombolaPriceSubmit() {
     setLimitLoading(true);
     try {
       await changeTombolaPrice({ tombolaPrice, eventUuid: eventId });
@@ -392,12 +400,11 @@ export default function UserTable({
     } finally {
       setLimitLoading(false);
     }
-  };
-
-  if (error) {
-    return <p className="text-red-500">Грешка при зареждане: {error.message}</p>;
   }
 
+  // -------------------------------
+  // Fasching: row color + status label
+  // -------------------------------
   function getFaschingRowColor(c: Customer) {
     if (c.reservation) return c.expiresSoon ? "bg-red-200" : "bg-red-100";
     if (c.isEnteredFasching && c.isEnteredAfter) return "bg-purple-100";
@@ -413,6 +420,13 @@ export default function UserTable({
     if (c.isEnteredFasching) return "Влязъл (Fasching)";
     if (c.isEnteredAfter) return "Влязъл (After)";
     return "Платен, но не е влязъл";
+  }
+
+  // -------------------------------
+  // Render
+  // -------------------------------
+  if (error) {
+    return <p className="text-red-500">Грешка при зареждане: {error.message}</p>;
   }
 
   return (
@@ -435,6 +449,7 @@ export default function UserTable({
         </div>
       </div>
 
+      {/* Ако не е Fasching + не е seller => можем да настройваме лимит/томбола */}
       {!isFasching && !isSeller && (
         <div className="flex flex-col gap-2 mb-4">
           <form
@@ -491,14 +506,14 @@ export default function UserTable({
         <p>Зареждане...</p>
       ) : (
         <>
-          {/* Ако не е Fasching и не е seller, показваме бутона за масово изпращане */}
+          {/* Ако не е Fasching и не е seller => бутон "Изпрати имейл до всички" */}
           {!isFasching && !isSeller && (
             <div className="mb-4">
               <SendEmailToAll eventId={eventId} onCustomerAdded={fetchUsers} />
             </div>
           )}
 
-          {/* Статистика за нормални събития */}
+          {/* Статистика: не-Fasching */}
           {!isFasching && (
             <div className="mb-4 p-3 border rounded bg-gray-50 text-sm">
               <ul className="space-y-1">
@@ -510,20 +525,44 @@ export default function UserTable({
             </div>
           )}
 
-          {/* Статистика за Fasching */}
+          {/* Статистика: Fasching */}
           {isFasching && (
-            <div className="mb-4 p-3 border rounded bg-gray-50 text-sm space-y-1">
-              <p>Общо билети: {totalTickets}</p>
-              <p>Платени: {paidTickets}</p>
-              <p>Резервации: {reservations}</p>
-              <p>Fasching: {faschingOnlyCount}</p>
-              <p>Fasching+After: {faschingAfterCount}</p>
-              <p className="mt-2 font-medium">Приходи: {totalFaschingRevenue} лв</p>
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* 1) Статистики за билети */}
+              <div className="p-3 border rounded bg-gray-50">
+                <h4 className="font-semibold mb-2 text-sm">Статистики за билети</h4>
+                <ul className="text-sm space-y-1">
+                  <li>Общо билети (Фашинг и Фашинг+афтър): {totalTickets}</li>
+                  <li>Платени: {paidTickets}</li>
+                  <li>Резервации: {reservations}</li>
+                  <li>Fasching (САМО): {faschingOnlyCount}</li>
+                  <li>Fasching+After: {faschingAfterCount}</li>
+                </ul>
+              </div>
+              {/* 2) Статистики за печалба */}
+              <div className="p-3 border rounded bg-gray-50">
+                <h4 className="font-semibold mb-2 text-sm">Статистики за печалба</h4>
+                <ul className="text-sm space-y-1">
+                  <li>Fasching (10 лв.): {faschingPortionRevenue} лв</li>
+                  <li>After (15 лв.): {afterPortionRevenue} лв</li>
+                  <li className="font-semibold">Общо: {totalFaschingRevenue} лв</li>
+                </ul>
 
-              {/* Бутонът за статистики се вижда само за Fasching Admin */}
+                {/* Пример: Admin бутон за statsModal */}
+
+              </div>
+              {/* 3) Статистики за влезли (check-in) */}
+              <div className="p-3 border rounded bg-gray-50">
+                <h4 className="font-semibold mb-2 text-sm">Статистики за влезли</h4>
+                <ul className="text-sm space-y-1">
+                  <li>Влезли (Fasching): {enteredFasching}</li>
+                  <li>Влезли (After): {enteredAfter}</li>
+                  <li>Влезли (И двете): {enteredBoth}</li>
+                </ul>
+              </div>
               {isFaschingAdmin && (
                 <button className="btn btn-secondary mt-3" onClick={handleOpenStatsModal}>
-                  Виж статистики
+                  Виж статистики за гласуване
                 </button>
               )}
             </div>
@@ -540,9 +579,10 @@ export default function UserTable({
             />
           </div>
 
-          {/* Таблица с билети */}
+          {/* Таблица: Ако е Fasching => друга, иначе => normal */}
           <div className="overflow-x-auto">
             {isFasching ? (
+              // ---------------- FASCHING TABLE ----------------
               <table className="table table-auto w-full border rounded">
                 <thead className="bg-gray-200">
                   <tr>
@@ -563,23 +603,20 @@ export default function UserTable({
                 </thead>
                 <tbody>
                   {filteredUsers.map((cust, idx) => {
-                    const rowClass = getFaschingRowColor(cust);
+                    const rowColor = getFaschingRowColor(cust);
                     const statusLabel = getFaschingStatusLabel(cust);
 
-                    // 1) Проверяваме дали билетът е неплатен
+                    // Логика: блокираме "Add After", ако билетът е неплатен, 
+                    // ако already е реален "fasching-after" (не hidden),
+                    // или ако е 8-клас (примерна политика)
                     const isUnpaid = cust.reservation === true;
-                    // 2) Ако е истински After (не hidden), вече няма какво да ъпгрейдваме
                     const isRealAfter = (cust.ticket_type === "fasching-after" && !cust.hiddenafter);
-                    // 3) Осмокласници (по ваша политика)
-                    const isEighthGrade = ["8а", "8б", "8в", "8г", "8д", "8е", "8ж"].includes(cust.paperTicket || "");
-
-                    // Бутонът е неактивен само ако билетът е неплатен, 
-                    // или вече е "fasching-after" реален (не hidden), 
-                    // или е осмокласник
+                    const eighthGrades = ["8а", "8б", "8в", "8г", "8д", "8е", "8ж"];
+                    const isEighthGrade = eighthGrades.includes(cust.paperTicket || "");
                     const disableAddAfter = isUnpaid || isRealAfter || isEighthGrade;
 
                     return (
-                      <tr key={idx} className={rowClass}>
+                      <tr key={idx} className={rowColor}>
                         <td className="font-semibold">
                           {cust.firstname} {cust.lastname}
                         </td>
@@ -597,14 +634,13 @@ export default function UserTable({
                         </td>
                         <td>{cust.ticketToken || "—"}</td>
                         <td>{cust.ticketCode || "—"}</td>
-                        <td>
-                          {cust.ticket_type}
-                        </td>
+                        <td>{cust.ticket_type}</td>
                         <td>{cust.createdAt}</td>
                         <td>{statusLabel}</td>
-                        <td className="text-center">{cust.votedAt ? "Да" : "Не"}</td>
 
-                        {/* Ако е Fasching Admin -> показваме бутон "Отговори" за гласуване */}
+                        {/* Гласувал ли е? */}
+                        <td className="text-center">{cust.votedAt ? "Да" : "Не"}</td>
+                        {/* Бутон "Отговори" (ако е админ) */}
                         {isFaschingAdmin && (
                           <td>
                             <button
@@ -618,7 +654,7 @@ export default function UserTable({
                         )}
 
                         <td>
-                          {/* Бутонът се вижда само, ако Е "fasching" или "fasching-after" HIDDEN => т.е. все едно Fasching */}
+                          {/* AddAfter бутон, ако е билет Fasching или hidden-after */}
                           {(cust.ticket_type === "fasching" ||
                             (cust.ticket_type === "fasching-after" && cust.hiddenafter)) && (
                               <button
@@ -634,9 +670,9 @@ export default function UserTable({
                     );
                   })}
                 </tbody>
-
               </table>
             ) : (
+              // ---------------- NORMAL TABLE ----------------
               <table className="table table-auto w-full border rounded">
                 <thead className="bg-gray-200">
                   <tr>
@@ -705,7 +741,7 @@ export default function UserTable({
         </>
       )}
 
-      {/* Add After Modal */}
+      {/* Модал "Add After" */}
       <AnimatePresence>
         {isAddAfterModalOpen && currentTicket && (
           <motion.div
@@ -778,7 +814,7 @@ export default function UserTable({
         )}
       </AnimatePresence>
 
-      {/* See Answers Modal */}
+      {/* Модал "Answers" */}
       <AnimatePresence>
         {answersModalOpen && (
           <motion.div
@@ -836,7 +872,7 @@ export default function UserTable({
         )}
       </AnimatePresence>
 
-      {/* Stats Modal */}
+      {/* Модал "Stats" */}
       <AnimatePresence>
         {statsModalOpen && (
           <motion.div
@@ -859,7 +895,7 @@ export default function UserTable({
               </button>
 
               <h2 className="text-xl font-bold mb-4 text-center">
-                Fasching - Резултати от гласуването
+                Fasching - Детайлни статистики
               </h2>
 
               {statsLoading ? (
@@ -867,6 +903,7 @@ export default function UserTable({
               ) : Object.keys(faschingStats).length === 0 ? (
                 <p className="text-center">Все още няма гласове</p>
               ) : (
+                // Примерна визуализация
                 <div className="space-y-6">
                   {Object.entries(faschingStats).map(([categoryTitle, items]) => {
                     const maxVotes = items.reduce(
@@ -901,7 +938,6 @@ export default function UserTable({
                                     className="border-b last:border-none"
                                   >
                                     <td className="p-2">
-                                      {/* Показваме (Winner!) само за първия в списъка */}
                                       {i === 0 && (
                                         <span className="font-bold text-green-600 mr-1">
                                           (Winner!)
