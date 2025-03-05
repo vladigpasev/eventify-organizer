@@ -512,6 +512,13 @@
       "when": 1740851020654,
       "tag": "0072_kind_dagger",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "5",
+      "when": 1741172156496,
+      "tag": "0073_clean_blue_shield",
+      "breakpoints": true
     }
   ]
 }

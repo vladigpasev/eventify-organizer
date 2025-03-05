@@ -51,6 +51,9 @@ interface Customer {
   isEnteredFasching?: boolean;
   isEnteredAfter?: boolean;
   votedAt?: string | null;
+
+  // Ново поле
+  hiddenafter?: boolean;
 }
 
 interface UserVote {
@@ -87,13 +90,17 @@ export default function UserTable({
   // Is Fasching?
   const isFasching = eventId === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d";
 
-  // Basic stats
+  // --------------------
+  // Основни статистики
+  // --------------------
   const totalTickets = users.length;
   const paidTickets = users.filter(u => !u.reservation).length;
   const reservations = users.filter(u => u.reservation).length;
   const enteredCount = users.filter(u => u.isEntered).length;
 
-  // Fasching-specific stats
+  // --------------------
+  // Fasching статистики
+  // --------------------
   let faschingOnlyCount = 0;
   let faschingAfterCount = 0;
   let paidF = 0;
@@ -103,18 +110,30 @@ export default function UserTable({
   let enteredBoth = 0;
 
   if (isFasching) {
-    faschingOnlyCount = users.filter(u => u.ticket_type === "fasching").length;
-    faschingAfterCount = users.filter(u => u.ticket_type === "fasching-after").length;
-    paidF = users.filter(u => u.ticket_type === "fasching" && !u.reservation).length;
-    paidFA = users.filter(u => u.ticket_type === "fasching-after" && !u.reservation).length;
+    // Определяме дали да броим билета като fasching или fasching-after
+    // ако ticket_type === "fasching-after" И hiddenafter = true, го броим като fasching
+    const isFaschingTicket = (u: Customer) =>
+      u.ticket_type === "fasching" ||
+      (u.ticket_type === "fasching-after" && u.hiddenafter === true);
+
+    const isFaschingAfterTicket = (u: Customer) =>
+      u.ticket_type === "fasching-after" && !u.hiddenafter;
+
+    faschingOnlyCount = users.filter(isFaschingTicket).length;
+    faschingAfterCount = users.filter(isFaschingAfterTicket).length;
+
+    paidF = users.filter(u => isFaschingTicket(u) && !u.reservation).length;
+    paidFA = users.filter(u => isFaschingAfterTicket(u) && !u.reservation).length;
+
     enteredFasching = users.filter(u => u.isEnteredFasching).length;
     enteredAfter = users.filter(u => u.isEnteredAfter).length;
     enteredBoth = users.filter(u => u.isEnteredFasching && u.isEnteredAfter).length;
   }
 
-  // Примерни изчисления за приходи
-  const faschingPortionRevenue = 10 * (paidF + paidFA);
-  const afterPortionRevenue = 15 * paidFA;
+  // Примерни изчисления за приходи (Fasching)
+  // Fasching portion = 10 лв, After portion = 15 лв
+  const faschingPortionRevenue = 10 * (paidF + paidFA);  // paidF включва всички F и hiddenAfter
+  const afterPortionRevenue = 15 * paidFA;               // само не-hidden after
   const totalFaschingRevenue = faschingPortionRevenue + afterPortionRevenue;
 
   // ---------------
@@ -538,7 +557,6 @@ export default function UserTable({
                     <th>Дата/час</th>
                     <th>Статус</th>
                     <th>Гласувал?</th>
-                    {/* Колоната "Отговори" виждат само FaschingAdmin */}
                     {isFaschingAdmin && <th>Отговори</th>}
                     <th>Опции</th>
                   </tr>
@@ -547,12 +565,20 @@ export default function UserTable({
                   {filteredUsers.map((cust, idx) => {
                     const rowClass = getFaschingRowColor(cust);
                     const statusLabel = getFaschingStatusLabel(cust);
-                    const isFaschingTicket = cust.ticket_type === "fasching";
+
+                    // дали е "fasching" или hidden after
+                    const isFaschingTicket =
+                      cust.ticket_type === "fasching" ||
+                      (cust.ticket_type === "fasching-after" && cust.hiddenafter);
+
                     const isUnpaid = cust.reservation === true;
                     const isEighthGrade = [
                       "8а","8б","8в","8г","8д","8е","8ж",
                     ].includes(cust.paperTicket || "");
-                    const disableAddAfter = isUnpaid || !isFaschingTicket || isEighthGrade;
+                    
+                    // Ако е "hidden after", се държи все едно е F
+                    const disableAddAfter =
+                      isUnpaid || isFaschingTicket || isEighthGrade;
 
                     return (
                       <tr key={idx} className={rowClass}>
@@ -573,7 +599,12 @@ export default function UserTable({
                         </td>
                         <td>{cust.ticketToken || "—"}</td>
                         <td>{cust.ticketCode || "—"}</td>
-                        <td>{cust.ticket_type || "—"}</td>
+                        <td>
+                          {cust.ticket_type}
+                          {cust.hiddenafter && cust.ticket_type === "fasching-after" && (
+                            <span className="ml-1 text-xs text-gray-600">()</span>
+                          )}
+                        </td>
                         <td>{cust.createdAt}</td>
                         <td>{statusLabel}</td>
                         <td className="text-center">{cust.votedAt ? "Да" : "Не"}</td>
@@ -591,7 +622,8 @@ export default function UserTable({
                         )}
 
                         <td>
-                          {isFaschingTicket && (
+                          {/* Add After бутона */}
+                          {cust.ticket_type === "fasching" && (
                             <button
                               className="btn btn-sm btn-primary"
                               disabled={disableAddAfter}
@@ -816,7 +848,6 @@ export default function UserTable({
             exit={{ opacity: 0 }}
           >
             <motion.div
-              // Увеличаваме малко maxHeight и широчината за по-добра мобилна четимост
               className="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 relative max-h-[90vh] overflow-y-auto"
               initial={{ y: 50, scale: 0.95 }}
               animate={{ y: 0, scale: 1 }}

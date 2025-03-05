@@ -1,0 +1,1 @@
+ALTER TABLE "fasching_tickets" ADD COLUMN "hiddenafter" boolean DEFAULT false NOT NULL;

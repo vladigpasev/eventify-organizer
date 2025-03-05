@@ -2,7 +2,7 @@
 
 import { sql } from "@vercel/postgres";
 import { drizzle } from "drizzle-orm/vercel-postgres";
-import { eq, and, inArray, or, gt } from "drizzle-orm";
+import { eq, and, or, gt, inArray } from "drizzle-orm";
 import {
   eventCustomers,
   events,
@@ -40,12 +40,15 @@ interface Customer {
   isEnteredFasching?: boolean;
   isEnteredAfter?: boolean;
   votedAt?: string | null;
+
+  // Ново поле, което ще връщаме
+  hiddenafter?: boolean;
 }
 
 export async function getUsers(eventUuid: string): Promise<Customer[]> {
   // 1) Auth
   const token = cookies().get("token")?.value;
-  const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+  const decodedToken = jwt.verify(token, process.env.JWT_SECRET) as any;
   const userUuid = decodedToken.uuid;
 
   const currentUserDb = await db
@@ -116,6 +119,9 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         enteredFasching: faschingTickets.entered_fasching,
         enteredAfter: faschingTickets.entered_after,
         votedAt: faschingTickets.votedAt,
+
+        // Новото поле
+        hiddenAfter: faschingTickets.hiddenafter,
       })
       .from(faschingTickets)
       .innerJoin(faschingRequests, eq(faschingTickets.requestId, faschingRequests.id))
@@ -177,6 +183,8 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         isEnteredFasching: row.enteredFasching,
         isEnteredAfter: row.enteredAfter,
         votedAt: votedAtFormatted,
+
+        hiddenafter: row.hiddenAfter,
       } satisfies Customer;
     });
 
@@ -216,12 +224,10 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
         email: users.email,
       })
       .from(users)
-      // @ts-ignore
       .where(inArray(users.uuid, sellerUuids))
       .execute();
 
     sellerMap = sellerDetailsDb.reduce((acc, s) => {
-      // @ts-ignore
       acc[s.uuid] = {
         fullName: `${s.firstName} ${s.lastName}`,
         email: s.email,
@@ -260,7 +266,7 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       sellerEmail: sellerData?.email || null,
       sellerCurrent: c.sellerUuid === userUuid,
       reservation: c.reservation ?? false,
-      // Not used:
+      // Not used in normal events, so just pass default:
       ticketCode: undefined,
       ticket_type: undefined,
       guestSchoolName: null,
@@ -269,6 +275,8 @@ export async function getUsers(eventUuid: string): Promise<Customer[]> {
       isEnteredFasching: undefined,
       isEnteredAfter: undefined,
       votedAt: null,
+
+      hiddenafter: undefined,
     } satisfies Customer;
   });
 

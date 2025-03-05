@@ -129,6 +129,7 @@ export const faschingRequests = pgTable("fasching_requests", {
   deleted: boolean("deleted").notNull().default(false),
 });
 
+// Тук добавяме колона hiddenafter
 export const faschingTickets = pgTable("fasching_tickets", {
   id: serial("id").primaryKey(),
 
@@ -153,6 +154,9 @@ export const faschingTickets = pgTable("fasching_tickets", {
   voteToken: varchar("vote_token", { length: 255 }),
   votedAt: timestamp("voted_at", { withTimezone: true }),
   upgraderSellerId: varchar("upgrader_seller_id", { length: 100 }),
+
+  // Новата колона
+  hiddenafter: boolean("hiddenafter").notNull().default(false),
 });
 
 export const faschingVotes = pgTable(

@@ -21,7 +21,7 @@ import nodemailer from 'nodemailer';
 const db = drizzle(sql);
 
 /**
- * Добавя нов продавач (непроменено).
+ * Добавя нов продавач.
  */
 export async function addSeller(data: any) {
   const sellerSchema = z.object({
@@ -285,7 +285,9 @@ export async function getSellers(data: any) {
       return { success: true, sellers: results };
     }
 
-    // ФАШИНГ ЛОГИКА
+    // ----------------------------------
+    // ФАШИНГ ЛОГИКА (isFasching = true)
+    // ----------------------------------
     const results = await Promise.all(
       sellersDb.map(async (sellerObj) => {
         const emailNormalized = sellerObj.sellerEmail.toLowerCase().trim();
@@ -335,8 +337,13 @@ export async function getSellers(data: any) {
         let afterPortionCount = 0;
 
         for (const req of requestsDb) {
+          // Търсим билетите от тази заявка
           const ticketsDb = await db
-            .select()
+            .select({
+              ticketType: faschingTickets.ticketType,
+              upgraderSellerId: faschingTickets.upgraderSellerId,
+              hiddenAfter: faschingTickets.hiddenafter,
+            })
             .from(faschingTickets)
             .where(eq(faschingTickets.requestId, req.id))
             .execute();
@@ -345,13 +352,18 @@ export async function getSellers(data: any) {
             if (t.ticketType === "fasching") {
               faschingPortionCount++;
             } else if (t.ticketType === "fasching-after") {
-              // Ако няма upgraderSellerId, значи продавачът е продал целия F+A (25)
-              if (!t.upgraderSellerId) {
+              // Ако е hiddenAfter=true -> броим го като само fasching
+              if (t.hiddenAfter) {
                 faschingPortionCount++;
-                afterPortionCount++;
               } else {
-                // Ако има upgraderSellerId -> този продавач получава само fasching (10)
-                faschingPortionCount++;
+                // Ако няма upgraderSellerId, значи продавачът е продал целия F+A (25 лв)
+                if (!t.upgraderSellerId) {
+                  faschingPortionCount++;
+                  afterPortionCount++;
+                } else {
+                  // Ако има upgraderSellerId -> този продавач получава само fasching (10)
+                  faschingPortionCount++;
+                }
               }
             }
           }
@@ -359,7 +371,9 @@ export async function getSellers(data: any) {
 
         // Ъпгрейди, където upgraderSellerId = този user
         const upgradedTicketsDb = await db
-          .select()
+          .select({
+            hiddenAfter: faschingTickets.hiddenafter,
+          })
           .from(faschingTickets)
           .where(
             and(
@@ -371,9 +385,12 @@ export async function getSellers(data: any) {
 
         let upgradesCount = 0;
         for (const t of upgradedTicketsDb) {
-          upgradesCount++;
-          // ъпгрейдърът получава 15 (After portion)
-          afterPortionCount++;
+          // Ако hiddenAfter=false, реално сме продали After порцията
+          // Ако hiddenAfter=true, го броим само като fasching => няма after portion
+          if (!t.hiddenAfter) {
+            upgradesCount++;
+            afterPortionCount++;
+          }
         }
 
         const faschingRevenue = 10 * faschingPortionCount;
