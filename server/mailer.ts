@@ -128,19 +128,6 @@ export async function sendFaschingTicketEmail({
               Преглед на билета
             </a>
           </p>
-          ${
-            voteUrl
-              ? `
-          <hr/>
-          <p>Можете да гласувате за своите фаворити, номинирани на Фашинг 2025, като натиснете тук:</p>
-          <p>
-            <a class="btn" href="${voteUrl}" target="_blank">
-              Гласувай сега
-            </a>
-          </p>
-          `
-              : ""
-          }
           <p>Очакваме ви с нетърпение!</p>
         </div>
         <div class="footer">
