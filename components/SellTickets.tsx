@@ -8,7 +8,6 @@ function SellTickets({ eventUuid, isSeller }) {
   const [error, setError] = useState('');
   const [sellers, setSellers] = useState([]);
 
-  // Fasching check
   const isFasching = (eventUuid === "956b2e2b-2a48-4f36-a6fa-50d25a2ab94d");
 
   useEffect(() => {
@@ -16,10 +15,8 @@ function SellTickets({ eventUuid, isSeller }) {
       try {
         const response = await getSellers({ eventUuid });
         if (response.success) {
-          //@ts-ignore
           setSellers(response.sellers);
         } else {
-          //@ts-ignore
           setError(response.message);
         }
       } catch (err) {
@@ -30,7 +27,6 @@ function SellTickets({ eventUuid, isSeller }) {
     fetchSellers();
   }, [eventUuid]);
 
-  //@ts-ignore
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -39,14 +35,12 @@ function SellTickets({ eventUuid, isSeller }) {
     try {
       const resp = await addSeller({ email, eventUuid });
       if (!resp.success) {
-        //@ts-ignore
         setError(resp.message);
       } else {
         setEmail('');
         // Reload
         const updated = await getSellers({ eventUuid });
         if (updated.success) {
-          //@ts-ignore
           setSellers(updated.sellers);
         }
       }
@@ -87,7 +81,7 @@ function SellTickets({ eventUuid, isSeller }) {
       ) : (
         <div className="overflow-x-auto">
           {isFasching ? (
-            /* ФАШИНГ ТАБЛИЦА */
+            // ФАШИНГ ТАБЛИЦА
             <table className="min-w-full text-sm border-collapse">
               <thead className="bg-gray-100">
                 <tr>
@@ -109,14 +103,19 @@ function SellTickets({ eventUuid, isSeller }) {
                     After (лв)
                   </th>
                   <th className="px-4 py-2 text-left font-semibold">
-                    Общо (лв)
+                    Общо билети (лв)
+                  </th>
+                  <th className="px-4 py-2 text-left font-semibold text-red-600">
+                    Separe (лв)
+                  </th>
+                  <th className="px-4 py-2 text-left font-semibold">
+                    Grand Total (лв)
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {sellers
-                  //@ts-ignore
-                  .sort((a, b) => (b.totalRevenue ?? 0) - (a.totalRevenue ?? 0))
+                  .sort((a, b) => (b.grandTotal || 0) - (a.grandTotal || 0))
                   .map((seller, idx) => (
                     <tr key={idx} className="border-b">
                       <td className="px-4 py-2">{seller.sellerEmail}</td>
@@ -125,33 +124,54 @@ function SellTickets({ eventUuid, isSeller }) {
                           ? "нерегистриран"
                           : `${seller.firstname} ${seller.lastname}`}
                       </td>
-                      <td className="px-4 py-2">{seller.faschingPortionCount || 0}</td>
-                      <td className="px-4 py-2">{seller.afterPortionCount || 0}</td>
-                      <td className="px-4 py-2">{seller.upgradesCount || 0}</td>
-                      <td className="px-4 py-2">{(seller.faschingRevenue || 0).toFixed(2)}</td>
-                      <td className="px-4 py-2">{(seller.afterRevenue || 0).toFixed(2)}</td>
+                      <td className="px-4 py-2">
+                        {seller.faschingPortionCount || 0}
+                      </td>
+                      <td className="px-4 py-2">
+                        {seller.afterPortionCount || 0}
+                      </td>
+                      <td className="px-4 py-2">
+                        {seller.upgradesCount || 0}
+                      </td>
+                      <td className="px-4 py-2">
+                        {(seller.faschingRevenue || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2">
+                        {(seller.afterRevenue || 0).toFixed(2)}
+                      </td>
                       <td className="px-4 py-2 font-semibold">
                         {(seller.totalRevenue || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 font-semibold text-red-600">
+                        {(seller.separeRevenue || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 font-semibold text-blue-600">
+                        {(seller.grandTotal || 0).toFixed(2)}
                       </td>
                     </tr>
                   ))}
               </tbody>
             </table>
           ) : (
-            /* НЕ-ФАШИНГ ТАБЛИЦА */
+            // НЕ-ФАШИНГ ТАБЛИЦА
             <table className="min-w-full text-sm border-collapse">
               <thead className="bg-gray-100">
                 <tr>
                   <th className="px-4 py-2 text-left font-semibold">Имейл</th>
-                  <th className="px-4 py-2 text-left font-semibold">Продадени билети</th>
+                  <th className="px-4 py-2 text-left font-semibold">
+                    Продадени билети
+                  </th>
                   <th className="px-4 py-2 text-left font-semibold">Томбола</th>
-                  <th className="px-4 py-2 text-left font-semibold">Дължимо (лв)</th>
-                  <th className="px-4 py-2 text-left font-semibold">Резервации</th>
+                  <th className="px-4 py-2 text-left font-semibold">
+                    Дължимо (лв)
+                  </th>
+                  <th className="px-4 py-2 text-left font-semibold">
+                    Резервации
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {sellers
-                  //@ts-ignore
                   .sort((a, b) => (b.ticketsSold || 0) - (a.ticketsSold || 0))
                   .map((seller, idx) => (
                     <tr key={idx} className="border-b">

@@ -519,6 +519,13 @@
       "when": 1741172156496,
       "tag": "0073_clean_blue_shield",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "5",
+      "when": 1741369569274,
+      "tag": "0074_ambitious_yellow_claw",
+      "breakpoints": true
     }
   ]
 }

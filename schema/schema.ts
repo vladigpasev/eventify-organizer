@@ -129,7 +129,7 @@ export const faschingRequests = pgTable("fasching_requests", {
   deleted: boolean("deleted").notNull().default(false),
 });
 
-// Тук добавяме колона hiddenafter
+// faschingTickets: добавяме hiddenafter, owesforsepare, separesellerid
 export const faschingTickets = pgTable("fasching_tickets", {
   id: serial("id").primaryKey(),
 
@@ -155,8 +155,14 @@ export const faschingTickets = pgTable("fasching_tickets", {
   votedAt: timestamp("voted_at", { withTimezone: true }),
   upgraderSellerId: varchar("upgrader_seller_id", { length: 100 }),
 
-  // Новата колона
+  // Новото:
   hiddenafter: boolean("hiddenafter").notNull().default(false),
+
+  // Колонки за сепаре:
+  owesforsepare: numeric("owesforsepare", { precision: 10, scale: 2 })
+    .notNull()
+    .default("0"),
+  separesellerid: varchar("separesellerid", { length: 100 }),
 });
 
 export const faschingVotes = pgTable(

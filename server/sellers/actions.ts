@@ -95,7 +95,7 @@ export async function addSeller(data: any) {
       eventUuid: validatedData.eventUuid,
     }).execute();
 
-    // Изпращаме имейл
+    // Изпращаме имейл (опционално)
     let transporter = nodemailer.createTransport({
       host: process.env.EMAIL_SERVER_HOST,
       port: process.env.EMAIL_SERVER_PORT,
@@ -136,8 +136,8 @@ export async function addSeller(data: any) {
 
 /**
  * Връща списък от продавачи за дадено събитие.
- * Ако е Fasching: подробна разбивка (Fasching portion, After portion, Upgrades).
- * Ако не е: старата логика (ticketsSold, reservations, tombolaTickets).
+ * При Fasching -> подробна разбивка + separeRevenue
+ * При стандартно -> ticketsSold, reservations, tombolaTickets, priceOwed
  */
 export async function getSellers(data: any) {
   const eventSellerSchema = z.object({
@@ -216,7 +216,7 @@ export async function getSellers(data: any) {
             };
           }
 
-          // Платени (reservation = false)
+          // Платени (reservation=false)
           const paidDb = await db
             .select()
             .from(eventCustomers)
@@ -229,7 +229,9 @@ export async function getSellers(data: any) {
             )
             .execute();
 
-          // Резервации (reservation = true)
+          const ticketsSold = paidDb.length;
+
+          // Резервации
           const reservationDb = await db
             .select()
             .from(eventCustomers)
@@ -242,7 +244,6 @@ export async function getSellers(data: any) {
             )
             .execute();
 
-          const ticketsSold = paidDb.length;
           const reservations = reservationDb.length;
 
           // Tombola tickets
@@ -285,14 +286,12 @@ export async function getSellers(data: any) {
       return { success: true, sellers: results };
     }
 
-    // ----------------------------------
-    // ФАШИНГ ЛОГИКА (isFasching = true)
-    // ----------------------------------
+    // --------- FASCHING ЛОГИКА ---------
     const results = await Promise.all(
       sellersDb.map(async (sellerObj) => {
         const emailNormalized = sellerObj.sellerEmail.toLowerCase().trim();
 
-        // Търсим user
+        // Търсим потребителя (ако е регистриран)
         const userDb = await db
           .select({
             uuid: users.uuid,
@@ -305,7 +304,6 @@ export async function getSellers(data: any) {
 
         const userInfo = userDb[0];
         if (!userInfo) {
-          // unregistered
           return {
             sellerEmail: emailNormalized,
             firstname: null,
@@ -317,10 +315,12 @@ export async function getSellers(data: any) {
             faschingRevenue: 0,
             afterRevenue: 0,
             totalRevenue: 0,
+            separeRevenue: 0,
+            grandTotal: 0,
           };
         }
 
-        // Платени заявки, при които sellerId = userInfo.uuid
+        // Взимаме всички FaschingRequests, където sellerId = userInfo.uuid (платени, неделнати= false)
         const requestsDb = await db
           .select()
           .from(faschingRequests)
@@ -336,8 +336,8 @@ export async function getSellers(data: any) {
         let faschingPortionCount = 0;
         let afterPortionCount = 0;
 
+        // Обхождаме заявките, смятаме колко F/A има
         for (const req of requestsDb) {
-          // Търсим билетите от тази заявка
           const ticketsDb = await db
             .select({
               ticketType: faschingTickets.ticketType,
@@ -352,16 +352,13 @@ export async function getSellers(data: any) {
             if (t.ticketType === "fasching") {
               faschingPortionCount++;
             } else if (t.ticketType === "fasching-after") {
-              // Ако е hiddenAfter=true -> броим го като само fasching
               if (t.hiddenAfter) {
                 faschingPortionCount++;
               } else {
-                // Ако няма upgraderSellerId, значи продавачът е продал целия F+A (25 лв)
                 if (!t.upgraderSellerId) {
                   faschingPortionCount++;
                   afterPortionCount++;
                 } else {
-                  // Ако има upgraderSellerId -> този продавач получава само fasching (10)
                   faschingPortionCount++;
                 }
               }
@@ -369,7 +366,7 @@ export async function getSellers(data: any) {
           }
         }
 
-        // Ъпгрейди, където upgraderSellerId = този user
+        // Ъпгрейди, където upgraderSellerId = userInfo.uuid
         const upgradedTicketsDb = await db
           .select({
             hiddenAfter: faschingTickets.hiddenafter,
@@ -385,17 +382,36 @@ export async function getSellers(data: any) {
 
         let upgradesCount = 0;
         for (const t of upgradedTicketsDb) {
-          // Ако hiddenAfter=false, реално сме продали After порцията
-          // Ако hiddenAfter=true, го броим само като fasching => няма after portion
           if (!t.hiddenAfter) {
+            // Реално after portion
             upgradesCount++;
             afterPortionCount++;
           }
         }
 
+        // Fasching = 10 лв, After = 15 лв
         const faschingRevenue = 10 * faschingPortionCount;
         const afterRevenue = 15 * afterPortionCount;
         const totalRevenue = faschingRevenue + afterRevenue;
+
+        // Separe revenue: намираме билети, където separesellerid = userInfo.uuid
+        // и сумираме owesForSepare. Сега няма да е 0, защото не го зануляваме.
+        const separeTicketsDb = await db
+          .select({
+            owed: faschingTickets.owesforsepare,
+          })
+          .from(faschingTickets)
+          .where(eq(faschingTickets.separesellerid, userInfo.uuid))
+          .execute();
+
+        let separeRevenue = 0;
+        for (const row of separeTicketsDb) {
+          if (row.owed) {
+            separeRevenue += parseFloat(row.owed.toString());
+          }
+        }
+
+        const grandTotal = totalRevenue + separeRevenue;
 
         return {
           sellerEmail: emailNormalized,
@@ -408,6 +424,8 @@ export async function getSellers(data: any) {
           faschingRevenue,
           afterRevenue,
           totalRevenue,
+          separeRevenue,
+          grandTotal,
         };
       })
     );
